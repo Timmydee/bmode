@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Game Night — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stage:#14121F; --stage-2:#1D1A2C; --stage-line:#332F47;
+    --spotlight:#F5B759; --spotlight-ink:#4A2E00;
+    --current:#7C6FF0; --current-ink:#EFECFF;
+    --ember:#E85D4C;
+    --paper:#FBF7EF; --paper-2:#F2ECDD;
+    --ink:#1C1A24; --ink-soft:#5B5768; --ink-faint:#8B8697;
+    --display: 'Bricolage Grotesque', sans-serif;
+    --body: 'Instrument Sans', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--body); line-height:1.5;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:72px 40px 120px;}
+  .kicker{font-family:var(--body); font-size:14px; color:var(--ink-soft); margin:0 0 12px;}
+  h1{font-family:var(--display); font-weight:700; font-size:56px; line-height:1.02; margin:0 0 20px; max-width:11ch;}
+  h2{font-family:var(--display); font-weight:600; font-size:28px; margin:0 0 6px;}
+  .section-lede{color:var(--ink-soft); font-size:16px; max-width:56ch; margin:0 0 32px;}
+  .intro-lede{font-size:19px; color:var(--ink-soft); max-width:58ch; margin:0 0 64px;}
+  section{margin-top:88px;}
+
+  .principles{display:grid; grid-template-columns:repeat(2,1fr); gap:28px 40px; margin-top:28px;}
+  .principle{border-top:1px solid #DED6BE; padding-top:16px;}
+  .principle b{font-family:var(--display); font-weight:600; font-size:17px; display:block; margin-bottom:6px;}
+  .principle span{font-size:14px; color:var(--ink-soft);}
+
+  .swatches{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:28px;}
+  .swatch{border-radius:14px; overflow:hidden; border:1px solid #E4DCC4;}
+  .swatch .fill{height:96px;}
+  .swatch .meta{padding:14px 16px; background:var(--paper);}
+  .swatch .name{font-family:var(--display); font-weight:600; font-size:15px;}
+  .swatch .hex{font-size:13px; color:var(--ink-soft); margin-top:2px;}
+  .swatch .role{font-size:13px; color:var(--ink-faint); margin-top:6px;}
+
+  .type-row{display:flex; align-items:baseline; gap:24px; padding:20px 0; border-top:1px solid #DED6BE;}
+  .type-row:last-child{border-bottom:1px solid #DED6BE;}
+  .type-label{width:140px; flex-shrink:0; font-size:13px; color:var(--ink-soft);}
+  .type-sample.display{font-family:var(--display); font-weight:700;}
+  .type-sample.body{font-family:var(--body); font-weight:400;}
+
+  .comp-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:28px;}
+  .comp-card{background:#fff; border:1px solid #E4DCC4; border-radius:14px; padding:24px;}
+  .comp-card .label{font-size:13px; color:var(--ink-soft); margin-bottom:16px;}
+  .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center;}
+
+  .btn{font-family:var(--body); font-weight:500; font-size:15px; border-radius:10px; padding:11px 20px; border:none; cursor:pointer;}
+  .btn-primary{background:var(--spotlight); color:var(--spotlight-ink);}
+  .btn-secondary{background:transparent; color:var(--ink); border:1.5px solid var(--ink);}
+  .btn-ghost{background:transparent; color:var(--ink-soft); border:1.5px solid #DED6BE;}
+
+  .badge{display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:500; padding:5px 12px; border-radius:999px;}
+  .badge-live{background:var(--current-ink); color:var(--current);}
+  .badge-live .dot{width:6px; height:6px; border-radius:50%; background:var(--current); animation:pulse 1.6s infinite;}
+  .badge-ended{background:#EDE8D8; color:var(--ink-soft);}
+  .badge-full{background:#FBEAD3; color:var(--spotlight-ink);}
+
+  .field-demo{border:1.5px solid #DED6BE; border-radius:10px; padding:12px 14px; font-family:var(--display); font-weight:600; font-size:20px; letter-spacing:0.08em; width:180px; text-align:center; background:var(--paper);}
+
+  .stat-card{background:var(--paper-2); border-radius:12px; padding:16px 18px;}
+  .stat-card .n{font-family:var(--display); font-weight:700; font-size:26px;}
+  .stat-card .l{font-size:13px; color:var(--ink-soft); margin-top:2px;}
+
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  .mock-caption{font-size:14px; color:var(--ink-soft); margin:14px 0 0;}
+  .mock-caption b{color:var(--ink); font-weight:500;}
+
+  /* ---- Stage mockup ---- */
+  .stage{
+    background:var(--stage); border-radius:20px; padding:56px 48px 44px;
+    color:#fff; position:relative; overflow:hidden;
+  }
+  .stage-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:48px;}
+  .stage-brand{font-family:var(--display); font-weight:700; font-size:15px; color:#B5AFD1; letter-spacing:0.01em;}
+  .stage-code{font-family:var(--body); font-size:14px; color:#B5AFD1;}
+  .stage-code b{font-family:var(--display); color:#fff; font-weight:600; letter-spacing:0.06em; margin-left:6px;}
+  .stage-question{font-family:var(--display); font-weight:700; font-size:38px; line-height:1.12; max-width:18ch; margin:0 0 40px;}
+  .stage-bars{display:flex; flex-direction:column; gap:16px; max-width:680px;}
+  .stage-bar-row{display:flex; align-items:center; gap:16px;}
+  .stage-bar-label{width:220px; flex-shrink:0; font-size:16px; color:#E5E1F2;}
+  .stage-bar-track{flex:1; height:14px; background:var(--stage-2); border-radius:8px; overflow:hidden; border:1px solid var(--stage-line);}
+  .stage-bar-fill{height:100%; border-radius:8px; background:var(--spotlight);}
+  .stage-bar-fill.current{background:var(--current);}
+  .stage-bar-pct{width:44px; text-align:right; font-family:var(--display); font-weight:600; font-size:16px;}
+  .stage-bottom{display:flex; justify-content:space-between; align-items:center; margin-top:44px;}
+  .stage-count{font-size:14px; color:#B5AFD1;}
+  .stage-count b{color:#fff; font-family:var(--display); font-weight:600;}
+
+  /* ---- Pocket mockup ---- */
+  .pocket-frame{background:var(--paper-2); border-radius:20px; padding:20px; width:300px; margin:0 auto;}
+  .pocket-screen{background:var(--paper); border-radius:14px; padding:24px 20px 20px; min-height:480px; display:flex; flex-direction:column;}
+  .pocket-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:28px;}
+  .pocket-live{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--current); font-weight:500;}
+  .pocket-live .dot{width:6px; height:6px; border-radius:50%; background:var(--current); animation:pulse 1.6s infinite;}
+  .pocket-name{font-size:12px; color:var(--ink-faint);}
+  .pocket-q{font-family:var(--display); font-weight:700; font-size:21px; line-height:1.2; margin:0 0 24px;}
+  .pocket-options{display:flex; flex-direction:column; gap:10px; flex:1;}
+  .pocket-opt{border:1.5px solid #DED6BE; border-radius:12px; padding:16px; font-size:15px; font-weight:500; background:#fff;}
+  .pocket-opt.selected{border-color:var(--spotlight); background:#FBEAD3; color:var(--spotlight-ink);}
+  .pocket-footer{margin-top:20px; text-align:center; font-size:12px; color:var(--ink-faint);}
+
+  .dont{display:grid; grid-template-columns:1fr; gap:10px; margin-top:28px;}
+  .dont-row{display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:16px 0; border-top:1px solid #DED6BE; font-size:14px;}
+  .dont-row .h{font-size:12px; color:var(--ink-faint); margin-bottom:4px;}
+  .dont-row .no{color:var(--ember);}
+  .dont-row .yes{color:#3F7C55;}
+
+  @media (max-width:760px){
+    .wrap{padding:48px 20px 80px;}
+    h1{font-size:38px;}
+    .principles, .comp-grid, .swatches{grid-template-columns:1fr;}
+    .dont-row{grid-template-columns:1fr;}
+    .stage-question{font-size:28px;}
+    .stage-bar-label{width:140px; font-size:14px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">Design system — v1</p>
+  <h1>Two rooms, one language</h1>
+  <p class="intro-lede">A host's projector and a guest's phone are different rooms with different needs — one is read from across the room, one is held in a hand. The system below designs them separately, but ties them together with the same type, color, and motion vocabulary so the product still feels like one thing.</p>
+
+  <section>
+    <h2>Principles</h2>
+    <p class="section-lede">The load-bearing decisions everything else follows from.</p>
+    <div class="principles">
+      <div class="principle"><b>Legible across a room</b><span>Stage type is sized and weighted to be read from the back of a conference room on a projector, not just a laptop demo.</span></div>
+      <div class="principle"><b>Two modes, one system</b><span>Stage (dark, presenter) and Pocket (light, participant) look different on purpose, but share the same typefaces, accent colors, and motion so they read as one product.</span></div>
+      <div class="principle"><b>Live feels alive</b><span>One deliberate motion vocabulary — count-up numbers, filling bars, a pulsing live dot — not hover effects scattered across every element.</span></div>
+      <div class="principle"><b>Corporate-safe energy</b><span>Playful enough for a Friday game night, restrained enough for an HR lead to put in front of the whole company.</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Color</h2>
+    <p class="section-lede">Built from a stage-lighting idea, not a generic brand palette. Gold marks the thing that's active; violet marks the thing that's live right now — the two are never interchangeable.</p>
+    <div class="swatches">
+      <div class="swatch"><div class="fill" style="background:#14121F"></div><div class="meta"><div class="name">Stage</div><div class="hex">#14121F</div><div class="role">Presenter background</div></div></div>
+      <div class="swatch"><div class="fill" style="background:#F5B759"></div><div class="meta"><div class="name">Spotlight</div><div class="hex">#F5B759</div><div class="role">Primary accent, selection</div></div></div>
+      <div class="swatch"><div class="fill" style="background:#7C6FF0"></div><div class="meta"><div class="name">Current</div><div class="hex">#7C6FF0</div><div class="role">Live / real-time only</div></div></div>
+      <div class="swatch"><div class="fill" style="background:#E85D4C"></div><div class="meta"><div class="name">Ember</div><div class="hex">#E85D4C</div><div class="role">Alerts, closing timers</div></div></div>
+      <div class="swatch"><div class="fill" style="background:#FBF7EF; border-bottom:1px solid #E4DCC4"></div><div class="meta"><div class="name">Paper</div><div class="hex">#FBF7EF</div><div class="role">Participant background</div></div></div>
+      <div class="swatch"><div class="fill" style="background:#1C1A24"></div><div class="meta"><div class="name">Ink</div><div class="hex">#1C1A24</div><div class="role">Text on Paper</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Type</h2>
+    <p class="section-lede">Bricolage Grotesque for anything that needs to command attention — scores, countdowns, headlines. Instrument Sans for everything you actually read.</p>
+    <div class="type-row"><div class="type-label">Display / 700</div><div class="type-sample display" style="font-size:44px;">Round 3</div></div>
+    <div class="type-row"><div class="type-label">Heading / 600</div><div class="type-sample display" style="font-size:26px;">What excites you most?</div></div>
+    <div class="type-row"><div class="type-label">Body / 400</div><div class="type-sample body" style="font-size:17px;">Enter the six-digit code your host is showing on screen.</div></div>
+    <div class="type-row"><div class="type-label">Caption / 500</div><div class="type-sample body" style="font-size:13px; color:var(--ink-soft);">48 people have joined this session</div></div>
+  </section>
+
+  <section>
+    <h2>Components</h2>
+    <p class="section-lede">Light-mode primitives, shared across both marketing and Pocket views.</p>
+    <div class="comp-grid">
+      <div class="comp-card">
+        <div class="label">Buttons</div>
+        <div class="row">
+          <button class="btn btn-primary">Start session</button>
+          <button class="btn btn-secondary">Preview</button>
+          <button class="btn btn-ghost">Cancel</button>
+        </div>
+      </div>
+      <div class="comp-card">
+        <div class="label">Status badges</div>
+        <div class="row">
+          <span class="badge badge-live"><span class="dot"></span>Live</span>
+          <span class="badge badge-full">48 joined</span>
+          <span class="badge badge-ended">Ended</span>
+        </div>
+      </div>
+      <div class="comp-card">
+        <div class="label">Join code field</div>
+        <div class="field-demo">482 731</div>
+      </div>
+      <div class="comp-card">
+        <div class="label">Stat cards</div>
+        <div class="row">
+          <div class="stat-card"><div class="n">48</div><div class="l">Participants</div></div>
+          <div class="stat-card"><div class="n">6</div><div class="l">Questions asked</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Stage view</h2>
+    <p class="section-lede">What's on the projector. Dark, flat, no shadows — shadows don't read on a projected surface, so hierarchy comes from scale and the gold/violet accents instead.</p>
+    <div class="stage">
+      <div class="stage-top">
+        <div class="stage-brand">Game Night</div>
+        <div class="stage-code">Join at gamenight.app <b>482 731</b></div>
+      </div>
+      <div class="stage-question">What excites you most about remote work?</div>
+      <div class="stage-bars">
+        <div class="stage-bar-row"><div class="stage-bar-label">Flexible hours</div><div class="stage-bar-track"><div class="stage-bar-fill current" style="width:52%"></div></div><div class="stage-bar-pct">52%</div></div>
+        <div class="stage-bar-row"><div class="stage-bar-label">No commute</div><div class="stage-bar-track"><div class="stage-bar-fill" style="width:31%"></div></div><div class="stage-bar-pct">31%</div></div>
+        <div class="stage-bar-row"><div class="stage-bar-label">Focus time</div><div class="stage-bar-track"><div class="stage-bar-fill" style="width:12%"></div></div><div class="stage-bar-pct">12%</div></div>
+        <div class="stage-bar-row"><div class="stage-bar-label">Fewer meetings</div><div class="stage-bar-track"><div class="stage-bar-fill" style="width:5%"></div></div><div class="stage-bar-pct">5%</div></div>
+      </div>
+      <div class="stage-bottom">
+        <div class="stage-count"><b>48</b> responses</div>
+        <span class="badge badge-live"><span class="dot"></span>Live</span>
+      </div>
+    </div>
+    <p class="mock-caption">Violet marks the leading answer as it updates live — <b>not</b> a static "winner" color, it only ever means "changing right now."</p>
+  </section>
+
+  <section>
+    <h2>Pocket view</h2>
+    <p class="section-lede">What's in a guest's hand. Light, glare-resistant, one thumb-reachable decision per screen.</p>
+    <div class="pocket-frame">
+      <div class="pocket-screen">
+        <div class="pocket-top">
+          <span class="pocket-live"><span class="dot"></span>Live</span>
+          <span class="pocket-name">Session 482731</span>
+        </div>
+        <div class="pocket-q">What excites you most about remote work?</div>
+        <div class="pocket-options">
+          <div class="pocket-opt selected">Flexible hours</div>
+          <div class="pocket-opt">No commute</div>
+          <div class="pocket-opt">Focus time</div>
+          <div class="pocket-opt">Fewer meetings</div>
+        </div>
+        <div class="pocket-footer">You voted — results shown on the main screen</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What this avoids</h2>
+    <p class="section-lede">Choices made deliberately against the defaults, so they don't drift back in later.</p>
+    <div class="dont">
+      <div class="dont-row"><div><div class="h">Instead of</div><div class="no">Warm cream + serif display + terracotta accent</div></div><div><div class="h">This uses</div><div class="yes">Warm paper + grotesk display, and gold that's clearly amber, not terracotta</div></div></div>
+      <div class="dont-row"><div><div class="h">Instead of</div><div class="no">Near-black background + one neon accent</div></div><div><div class="h">This uses</div><div class="yes">A violet-tinted stage color with two accents doing different jobs, not one neon doing everything</div></div></div>
+      <div class="dont-row"><div><div class="h">Instead of</div><div class="no">Identical rounded cards with the same soft shadow everywhere</div></div><div><div class="h">This uses</div><div class="yes">Flat bordered cards on Stage (no shadows on a projector), soft elevation only on Paper</div></div></div>
+      <div class="dont-row"><div><div class="h">Instead of</div><div class="no">ALL-CAPS eyebrows, arrows on every button, middle-dot meta strings</div></div><div><div class="h">This uses</div><div class="yes">Sentence case throughout, arrows only where something actually navigates away</div></div></div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
