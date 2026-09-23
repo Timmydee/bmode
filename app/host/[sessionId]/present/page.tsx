@@ -6,12 +6,18 @@ import { backend } from "@/lib/backend";
 import { useSession } from "@/lib/hooks/useSession";
 import { useActiveActivity } from "@/lib/hooks/useActiveActivity";
 import { useLiveResults } from "@/lib/hooks/useLiveResults";
+import { useRound } from "@/lib/hooks/useRound";
+import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
+import { useSurvey } from "@/lib/hooks/useSurvey";
 import JoinCode from "@/components/shared/JoinCode";
 import QRCode from "@/components/shared/QRCode";
 import ParticipantCount from "@/components/shared/ParticipantCount";
 import PollResults from "@/components/poll/PollResults";
 import WordCloudDisplay from "@/components/wordcloud/WordCloudDisplay";
 import QuestionList from "@/components/qa/QuestionList";
+import CountdownBadge from "@/components/round/CountdownBadge";
+import LeaderboardDisplay from "@/components/round/LeaderboardDisplay";
+import WinnersPodium from "@/components/round/WinnersPodium";
 
 // The projector-facing counterpart to app/host/[sessionId]/page.tsx — same
 // data, but display-only: no create/activate/moderate controls, so nothing
@@ -43,6 +49,19 @@ export default function HostPresentPage(
     activeActivity?.id ?? null,
     activeActivity?.kind ?? null,
   );
+  const round = useRound(sessionId);
+  const isRoundQuestion =
+    activeActivity?.kind === "poll" && round.currentQuestion?.id === activeActivity.id;
+  const leaderboard = useLeaderboard(
+    (round.round && round.revealed) || round.justEndedRoundId ? sessionId : null,
+  );
+  const survey = useSurvey(sessionId);
+  const isSurveyQuestion =
+    activeActivity?.kind === "poll" && activeActivity.surveyId === survey.survey?.id;
+  const surveyQuestionNumber =
+    isSurveyQuestion && activeActivity
+      ? survey.questions.findIndex((q) => q.activityId === activeActivity.id) + 1
+      : 0;
 
   if (loading || viewerId === undefined) {
     return (
@@ -108,13 +127,44 @@ export default function HostPresentPage(
         </span>
       </div>
 
-      {activeActivity?.kind === "poll" ? (
+      {round.justEndedRoundId && leaderboard ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6">
-          <h1 className="max-w-[22ch] text-center font-display text-4xl font-bold sm:text-5xl">
-            {activeActivity.prompt}
-          </h1>
+          <h1 className="font-display text-4xl font-bold sm:text-5xl">🎉 Winners 🎉</h1>
+          <WinnersPodium leaderboard={leaderboard} variant="stage" />
+        </div>
+      ) : activeActivity?.kind === "poll" && isRoundQuestion && round.revealed && leaderboard ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6">
+          <h1 className="font-display text-3xl font-bold sm:text-4xl">Leaderboard</h1>
+          <LeaderboardDisplay leaderboard={leaderboard} variant="stage" />
+        </div>
+      ) : activeActivity?.kind === "poll" ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6">
+          {isSurveyQuestion && (
+            <p className="text-sm text-stage-muted">
+              {survey.survey?.name} — question {surveyQuestionNumber} of {survey.questions.length}
+            </p>
+          )}
+          <div className="flex items-center gap-4">
+            <h1 className="max-w-[22ch] text-center font-display text-4xl font-bold sm:text-5xl">
+              {activeActivity.prompt}
+            </h1>
+            {isRoundQuestion && round.questionEndsAt && round.serverTimeAtLastSync && !round.revealed && (
+              <CountdownBadge
+                endsAt={round.questionEndsAt}
+                serverTimeAtLastSync={round.serverTimeAtLastSync}
+                variant="stage"
+              />
+            )}
+          </div>
           {liveResults && "byOption" in liveResults && (
-            <PollResults results={liveResults} />
+            <PollResults
+              results={liveResults}
+              correctOptionId={
+                isRoundQuestion && round.revealed
+                  ? activeActivity.correctOptionId
+                  : undefined
+              }
+            />
           )}
         </div>
       ) : activeActivity?.kind === "wordcloud" ? (

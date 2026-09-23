@@ -2,7 +2,7 @@
 
 Tracking against `agents/prd-and-build-guide.md` §9 phased build plan.
 
-## Status: Phases 0–7 complete, one manual test remains
+## Status: v1 complete — all Phases 0–7 done and verified
 
 All 7 phases are built and pass `npm run lint`, `npx tsc --noEmit`,
 `npm test` (34/34), and `next build` cleanly. Phases 2–6 were additionally
@@ -10,8 +10,13 @@ verified **live against the real Supabase backend** using Playwright-driven
 real browsers (not mocks) — multi-client realtime flows included. See each
 phase's section below for what was checked and the real bugs that live
 testing caught (four total, all in the realtime layer — see Phases 4 and
-6). The one thing that cannot be automated is Phase 7's final manual test
-with a real group of people; see that section for exactly what to check.
+6). Phase 7's final manual test — a real session run with a real group —
+was completed by the user (2026-09-17) and confirmed working. Per PRD §10,
+this is the definition of "done" for v1: nothing further is scoped in the
+phased build plan. Any next feature (scoring, branding, analytics, the
+Fastest Finger mechanics, etc.) is explicitly deferred in the PRD and needs
+its own decision before work starts — see the "What's next" note at the
+end of this file.
 
 ## Phase 0 — Project setup
 - [x] Next.js (App Router) + TypeScript — already bootstrapped (create-next-app)
@@ -313,7 +318,8 @@ code review alone.
       voting. No horizontal overflow, touch targets are full-width and
       generously sized, text wraps correctly. Screenshots checked visually
       — layouts already worked as designed with no changes needed.
-- [ ] **Manual test with a real group — needs you.** See below.
+- [x] **Manual test with a real group — done by the user (2026-09-17),
+      confirmed working.**
 
 ### What I verified automatically vs. what needs you
 Everything above — including the Phase 4/5/6 multi-client realtime flows —

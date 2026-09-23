@@ -3,15 +3,9 @@ import type { AuthClient } from "../contracts";
 
 export function createAuthClient(): AuthClient {
   return {
-    async signInWithEmail(email) {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo:
-            typeof window !== "undefined"
-              ? `${window.location.origin}/host`
-              : undefined,
-        },
+    async signInAnonymously(email) {
+      const { error } = await supabase.auth.signInAnonymously({
+        options: { data: { email } },
       });
       if (error) throw new Error(error.message);
     },

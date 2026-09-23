@@ -11,7 +11,7 @@ export default function HostPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [email, setEmail] = useState("");
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const [sessionsFor, setSessionsFor] = useState<{
@@ -40,16 +40,17 @@ export default function HostPage() {
   const sessions = sessionsFor?.userId === userId ? sessionsFor.sessions : [];
   const loadingSessions = Boolean(userId) && sessionsFor?.userId !== userId;
 
-  async function handleSendMagicLink(event: FormEvent) {
+  async function handleSignIn(event: FormEvent) {
     event.preventDefault();
     setAuthError(null);
+    setSigningIn(true);
     try {
-      await backend.auth.signInWithEmail(email);
-      setMagicLinkSent(true);
+      await backend.auth.signInAnonymously(email);
     } catch (error) {
       setAuthError(
-        error instanceof Error ? error.message : "Could not send the link.",
+        error instanceof Error ? error.message : "Could not sign in.",
       );
+      setSigningIn(false);
     }
   }
 
@@ -88,29 +89,27 @@ export default function HostPage() {
           Sign in to host
         </h1>
         <p className="mb-8 text-ink-soft">
-          We’ll email you a link — no password to remember.
+          Enter your email to get started — no password, no confirmation
+          email.
         </p>
-        {magicLinkSent ? (
-          <p className="text-ink">Check {email} for a sign-in link.</p>
-        ) : (
-          <form onSubmit={handleSendMagicLink} className="flex flex-col gap-4">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              className="rounded-[10px] border-[1.5px] border-hairline bg-paper px-4 py-3 text-ink outline-none focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
-            />
-            {authError && <p className="text-sm text-ember">{authError}</p>}
-            <button
-              type="submit"
-              className="rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink"
-            >
-              Send magic link
-            </button>
-          </form>
-        )}
+        <form onSubmit={handleSignIn} className="flex flex-col gap-4">
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@example.com"
+            className="rounded-[10px] border-[1.5px] border-hairline bg-paper px-4 py-3 text-ink outline-none focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
+          />
+          {authError && <p className="text-sm text-ember">{authError}</p>}
+          <button
+            type="submit"
+            disabled={signingIn}
+            className="rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink disabled:opacity-60"
+          >
+            {signingIn ? "Signing in…" : "Continue"}
+          </button>
+        </form>
       </div>
     );
   }

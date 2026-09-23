@@ -41,6 +41,16 @@ export function useActiveActivity(
       if (event.type === "activity_activated") {
         setLoaded({ sessionId, activity: event.activity });
       }
+      // A round question is a kind: "poll" activity like any other — these
+      // two additive branches keep every existing consumer of this hook
+      // (host/present/join pages) automatically round-aware with no
+      // per-page changes, matching activity_activated's exact shape.
+      if (event.type === "round_started") {
+        setLoaded({ sessionId, activity: event.firstQuestion });
+      }
+      if (event.type === "round_question_advanced") {
+        setLoaded({ sessionId, activity: event.question });
+      }
       if (event.type === "activity_closed") {
         setLoaded((prev) => {
           if (!prev || prev.sessionId !== sessionId) return prev;

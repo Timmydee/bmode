@@ -1,8 +1,11 @@
 import type {
   Activity,
+  PollActivity,
   PollResults,
   WordCloudResults,
   AudienceQuestion,
+  Round,
+  Leaderboard,
 } from "./types";
 
 // PRD §5 non-negotiable rule: every event carries `serverTime` so the UI
@@ -35,4 +38,46 @@ export type SessionEvent =
       question: AudienceQuestion;
       serverTime: number;
     }
-  | { type: "session_ended"; serverTime: number };
+  | { type: "session_ended"; serverTime: number }
+  // --- Rounds / scoring (v2). Round questions don't reuse
+  // activity_activated/activity_closed: a round question stays "active"
+  // through its reveal (so participants see the correct-answer highlight
+  // instead of falling back to the lobby) and only closes via
+  // round_question_advanced/round_ended. Every event embeds the full
+  // PollActivity where relevant, matching activity_activated's "no extra
+  // fetch needed" shape. No per-second tick event — clients derive the
+  // live countdown from endsAt + serverTime clock-skew correction. ---
+  | {
+      type: "round_started";
+      round: Round;
+      firstQuestion: PollActivity;
+      startedAt: number;
+      endsAt: number;
+      serverTime: number;
+    }
+  | {
+      type: "round_question_advanced";
+      roundId: string;
+      question: PollActivity;
+      questionIndex: number;
+      startedAt: number;
+      endsAt: number;
+      serverTime: number;
+    }
+  | {
+      type: "round_question_revealed";
+      activityId: string;
+      correctOptionId: string;
+      results: PollResults;
+      serverTime: number;
+    }
+  | {
+      type: "round_ended";
+      roundId: string;
+      serverTime: number;
+    }
+  | {
+      type: "leaderboard_updated";
+      leaderboard: Leaderboard;
+      serverTime: number;
+    };

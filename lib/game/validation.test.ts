@@ -4,6 +4,8 @@ import {
   validateNickname,
   validatePollOptionSelection,
   validateQuestion,
+  validateRoundDraft,
+  validateSurveyDraft,
   validateWord,
 } from "./validation";
 
@@ -88,5 +90,96 @@ describe("validatePollOptionSelection", () => {
     expect(validatePollOptionSelection("opt-1", validOptionIds).valid).toBe(
       true,
     );
+  });
+});
+
+describe("validateRoundDraft", () => {
+  const validQuestion = {
+    prompt: "What's the capital of France?",
+    options: ["Paris", "London"],
+    correctOptionIndex: 0,
+  };
+
+  it("rejects a round with no name", () => {
+    const result = validateRoundDraft({
+      name: "  ",
+      timeLimitSeconds: 20,
+      questions: [validQuestion],
+    });
+    expect(result.valid).toBe(false);
+  });
+
+  it("rejects a non-positive time limit", () => {
+    const result = validateRoundDraft({
+      name: "Round 1",
+      timeLimitSeconds: 0,
+      questions: [validQuestion],
+    });
+    expect(result.valid).toBe(false);
+  });
+
+  it("rejects a round with no questions", () => {
+    const result = validateRoundDraft({
+      name: "Round 1",
+      timeLimitSeconds: 20,
+      questions: [],
+    });
+    expect(result.valid).toBe(false);
+  });
+
+  it("rejects a question with fewer than 2 non-empty options", () => {
+    const result = validateRoundDraft({
+      name: "Round 1",
+      timeLimitSeconds: 20,
+      questions: [{ prompt: "Q1", options: ["Only one"], correctOptionIndex: 0 }],
+    });
+    expect(result.valid).toBe(false);
+  });
+
+  it("rejects a question with no correct answer marked", () => {
+    const result = validateRoundDraft({
+      name: "Round 1",
+      timeLimitSeconds: 20,
+      questions: [{ prompt: "Q1", options: ["A", "B"], correctOptionIndex: -1 }],
+    });
+    expect(result.valid).toBe(false);
+  });
+
+  it("accepts a well-formed round", () => {
+    const result = validateRoundDraft({
+      name: "Round 1",
+      timeLimitSeconds: 20,
+      questions: [validQuestion],
+    });
+    expect(result.valid).toBe(true);
+  });
+});
+
+describe("validateSurveyDraft", () => {
+  const validQuestion = { prompt: "How was the food?", options: ["Great", "OK", "Bad"] };
+
+  it("rejects a survey with no name", () => {
+    expect(
+      validateSurveyDraft({ name: "  ", questions: [validQuestion] }).valid,
+    ).toBe(false);
+  });
+
+  it("rejects a survey with no questions", () => {
+    expect(validateSurveyDraft({ name: "Feedback", questions: [] }).valid).toBe(
+      false,
+    );
+  });
+
+  it("rejects a question with fewer than 2 non-empty options", () => {
+    const result = validateSurveyDraft({
+      name: "Feedback",
+      questions: [{ prompt: "Q1", options: ["Only one"] }],
+    });
+    expect(result.valid).toBe(false);
+  });
+
+  it("accepts a well-formed survey", () => {
+    const result = validateSurveyDraft({ name: "Feedback", questions: [validQuestion] });
+    expect(result.valid).toBe(true);
   });
 });

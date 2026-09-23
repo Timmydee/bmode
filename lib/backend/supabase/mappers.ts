@@ -6,8 +6,14 @@ import type {
   Participant,
   PollOption,
   PollVote,
+  Round,
+  RoundQuestion,
+  RoundStatus,
   Session,
   SessionStatus,
+  Survey,
+  SurveyQuestion,
+  SurveyStatus,
   WordEntry,
 } from "../types";
 
@@ -163,6 +169,90 @@ export interface QuestionRow {
 // Upvote counts are computed at query time in qa-repo.ts (see the
 // migration's comment on why) and passed in here rather than stored on
 // the row itself.
+export interface RoundRow {
+  id: string;
+  session_id: string;
+  name: string;
+  status: RoundStatus;
+  time_limit_seconds: number;
+  order: number;
+  current_question_index: number | null;
+  current_question_started_at: string | null;
+  current_question_ends_at: string | null;
+}
+
+export function mapRoundRow(row: RoundRow): Round {
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    name: row.name,
+    status: row.status,
+    timeLimitSeconds: row.time_limit_seconds,
+    order: row.order,
+    currentQuestionIndex: row.current_question_index,
+    currentQuestionStartedAt: row.current_question_started_at
+      ? new Date(row.current_question_started_at).getTime()
+      : null,
+    currentQuestionEndsAt: row.current_question_ends_at
+      ? new Date(row.current_question_ends_at).getTime()
+      : null,
+  };
+}
+
+export interface RoundQuestionRow {
+  id: string;
+  round_id: string;
+  activity_id: string;
+  order: number;
+  correct_option_id: string;
+}
+
+export function mapRoundQuestionRow(row: RoundQuestionRow): RoundQuestion {
+  return {
+    id: row.id,
+    roundId: row.round_id,
+    activityId: row.activity_id,
+    order: row.order,
+    correctOptionId: row.correct_option_id,
+  };
+}
+
+export interface SurveyRow {
+  id: string;
+  session_id: string;
+  name: string;
+  status: SurveyStatus;
+  order: number;
+  current_question_index: number | null;
+}
+
+export function mapSurveyRow(row: SurveyRow): Survey {
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    name: row.name,
+    status: row.status,
+    order: row.order,
+    currentQuestionIndex: row.current_question_index,
+  };
+}
+
+export interface SurveyQuestionRow {
+  id: string;
+  survey_id: string;
+  activity_id: string;
+  order: number;
+}
+
+export function mapSurveyQuestionRow(row: SurveyQuestionRow): SurveyQuestion {
+  return {
+    id: row.id,
+    surveyId: row.survey_id,
+    activityId: row.activity_id,
+    order: row.order,
+  };
+}
+
 export function mapQuestionRow(
   row: QuestionRow,
   upvotes: number,

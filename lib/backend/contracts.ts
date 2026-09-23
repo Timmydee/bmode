@@ -6,6 +6,12 @@ import type {
   PollResults,
   WordCloudResults,
   AudienceQuestion,
+  Round,
+  RoundQuestion,
+  QuestionScore,
+  Leaderboard,
+  Survey,
+  SurveyQuestion,
 } from "./types";
 import type { SessionEvent } from "./events";
 
@@ -76,6 +82,73 @@ export interface QARepository {
   setHidden(questionId: string, hidden: boolean): Promise<void>;
 }
 
+export interface RoundRepository {
+  // Builds the round row AND all of its underlying poll activities +
+  // poll_options + correct-answer links up front (the whole round is
+  // authored before activation, not incrementally added while live).
+  create(input: {
+    sessionId: string;
+    name: string;
+    timeLimitSeconds: number;
+    questions: {
+      prompt: string;
+      options: string[]; // 2-6 labels, same constraint as standalone polls
+      correctOptionIndex: number;
+    }[];
+  }): Promise<{ round: Round; questions: RoundQuestion[] }>;
+
+  getById(roundId: string): Promise<Round | null>;
+  listBySession(sessionId: string): Promise<Round[]>;
+  listQuestions(roundId: string): Promise<RoundQuestion[]>;
+
+  // Mutators never broadcast — the caller publishes the SessionEvent,
+  // matching activity-repo.ts's convention.
+  activate(roundId: string): Promise<void>;
+  startQuestion(input: {
+    roundId: string;
+    questionIndex: number;
+    startedAt: number;
+    endsAt: number;
+  }): Promise<void>;
+  endRound(roundId: string): Promise<void>;
+}
+
+export interface ScoreRepository {
+  // Idempotent: safe to call more than once for the same activityId
+  // without double-scoring (upserts on the activity/participant pair).
+  scoreQuestion(input: {
+    activityId: string;
+    correctOptionId: string;
+    questionStartedAt: number;
+    timeLimitSeconds: number;
+  }): Promise<QuestionScore[]>;
+
+  getLeaderboard(sessionId: string): Promise<Leaderboard>;
+}
+
+export interface SurveyRepository {
+  // Builds the survey row and all of its underlying poll activities +
+  // poll_options up front, same authored-before-activation shape as
+  // RoundRepository.create — but no correct answer to resolve, since a
+  // survey question is a plain opinion poll.
+  create(input: {
+    sessionId: string;
+    name: string;
+    questions: { prompt: string; options: string[] }[];
+  }): Promise<{ survey: Survey; questions: SurveyQuestion[] }>;
+
+  getById(surveyId: string): Promise<Survey | null>;
+  listBySession(sessionId: string): Promise<Survey[]>;
+  listQuestions(surveyId: string): Promise<SurveyQuestion[]>;
+
+  // Mutators never broadcast — the caller publishes activity_activated /
+  // activity_closed directly (a survey question needs no dedicated event
+  // type, unlike a round question — see events.ts).
+  activate(surveyId: string): Promise<void>;
+  setCurrentQuestionIndex(surveyId: string, questionIndex: number): Promise<void>;
+  endSurvey(surveyId: string): Promise<void>;
+}
+
 export interface RealtimeClient {
   /** Subscribe to everything happening in one session. */
   subscribe(
@@ -89,7 +162,13 @@ export interface RealtimeClient {
 }
 
 export interface AuthClient {
-  signInWithEmail(email: string): Promise<void>; // magic link
+  // Signs the host in immediately via anonymous auth (real auth.uid(),
+  // zero email sent — Supabase's free-tier magic-link email hit its
+  // rate limit during testing). `email` is stored as a plain display
+  // label only, never verified and never used to authenticate — anyone
+  // can type any email. Acceptable for this app: no sensitive data, and
+  // the alternative (magic-link) is blocked by the email cap.
+  signInAnonymously(email: string): Promise<void>;
   signOut(): Promise<void>;
   getCurrentUserId(): Promise<string | null>;
   onAuthChange(cb: (userId: string | null) => void): Unsubscribe;
@@ -102,6 +181,9 @@ export interface Backend {
   activities: ActivityRepository;
   responses: ResponseRepository;
   qa: QARepository;
+  rounds: RoundRepository;
+  scores: ScoreRepository;
+  surveys: SurveyRepository;
   realtime: RealtimeClient;
   auth: AuthClient;
 }

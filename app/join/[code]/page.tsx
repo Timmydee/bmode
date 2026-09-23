@@ -6,12 +6,16 @@ import type { AudienceQuestion, QAActivity, Session } from "@/lib/backend";
 import { useParticipant } from "@/lib/hooks/useParticipant";
 import { useSession } from "@/lib/hooks/useSession";
 import { useActiveActivity } from "@/lib/hooks/useActiveActivity";
+import { useRound } from "@/lib/hooks/useRound";
+import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
 import { validateNickname } from "@/lib/game/validation";
 import ParticipantCount from "@/components/shared/ParticipantCount";
 import PollVoting from "@/components/poll/PollVoting";
 import WordCloudInput from "@/components/wordcloud/WordCloudInput";
 import QuestionComposer from "@/components/qa/QuestionComposer";
 import QuestionList from "@/components/qa/QuestionList";
+import LeaderboardDisplay from "@/components/round/LeaderboardDisplay";
+import WinnersPodium from "@/components/round/WinnersPodium";
 
 export default function JoinCodePage(props: PageProps<"/join/[code]">) {
   const { code } = use(props.params);
@@ -38,6 +42,12 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
   } = useParticipant(sessionId);
   const { session, participantCount } = useSession(sessionId, participant?.id);
   const { activity } = useActiveActivity(sessionId, session?.activeActivityId);
+  const round = useRound(sessionId);
+  const leaderboard = useLeaderboard(
+    (round.round && round.revealed) || round.justEndedRoundId ? sessionId : null,
+  );
+  const isRoundQuestion =
+    activity?.kind === "poll" && round.currentQuestion?.id === activity.id;
 
   const [nickname, setNickname] = useState("");
   const [joining, setJoining] = useState(false);
@@ -124,8 +134,45 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
     );
   }
 
+  if (round.justEndedRoundId && leaderboard) {
+    return (
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 px-6 py-16">
+        <h1 className="font-display text-2xl font-bold text-ink">🎉 Winners 🎉</h1>
+        <WinnersPodium leaderboard={leaderboard} variant="paper" />
+      </div>
+    );
+  }
+
   if (activity?.kind === "poll") {
-    return <PollVoting activity={activity} participantId={participant.id} />;
+    if (isRoundQuestion && round.revealed && leaderboard) {
+      return (
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 px-6 py-16">
+          <p className="text-sm text-ink-soft">Correct answer revealed</p>
+          <LeaderboardDisplay
+            leaderboard={leaderboard}
+            variant="paper"
+            highlightParticipantId={participant.id}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <PollVoting
+        activity={activity}
+        participantId={participant.id}
+        countdown={
+          isRoundQuestion && round.questionEndsAt && round.serverTimeAtLastSync
+            ? { endsAt: round.questionEndsAt, serverTime: round.serverTimeAtLastSync }
+            : undefined
+        }
+        revealed={
+          isRoundQuestion && round.revealed && round.currentQuestion?.correctOptionId
+            ? { correctOptionId: round.currentQuestion.correctOptionId }
+            : undefined
+        }
+      />
+    );
   }
 
   if (activity?.kind === "wordcloud") {

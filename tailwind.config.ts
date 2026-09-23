@@ -24,6 +24,13 @@ const config: Config = {
         live: "#7C6FF0",
         "live-ink": "#EFECFF",
         ember: "#E85D4C",
+        // v2 (Fastest Finger rounds): marks a correct answer on reveal.
+        // Deliberately not "live" (reserved for "changing right now", not
+        // a static correct-answer indicator) and not "spotlight" (already
+        // means primary CTA/brand accent). Green at a saturation/lightness
+        // consistent with the rest of the palette.
+        success: "#4CAF6D",
+        "success-ink": "#0B2A16",
         paper: "#FBF7EF",
         "paper-2": "#F2ECDD",
         ink: "#1C1A24",

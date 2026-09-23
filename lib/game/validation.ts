@@ -75,3 +75,69 @@ export function validatePollOptionSelection(
   }
   return ok();
 }
+
+export interface RoundQuestionDraft {
+  prompt: string;
+  options: string[];
+  correctOptionIndex: number;
+}
+
+export function validateRoundDraft(input: {
+  name: string;
+  timeLimitSeconds: number;
+  questions: RoundQuestionDraft[];
+}): ValidationResult {
+  if (input.name.trim().length === 0) {
+    return fail("Give the round a name.");
+  }
+  if (!Number.isInteger(input.timeLimitSeconds) || input.timeLimitSeconds <= 0) {
+    return fail("Time limit must be a positive number of seconds.");
+  }
+  if (input.questions.length === 0) {
+    return fail("Add at least one question.");
+  }
+  for (const [index, question] of input.questions.entries()) {
+    const trimmedOptions = question.options.map((opt) => opt.trim()).filter(Boolean);
+    if (question.prompt.trim().length === 0) {
+      return fail(`Question ${index + 1} needs a prompt.`);
+    }
+    if (trimmedOptions.length < 2 || trimmedOptions.length > 6) {
+      return fail(`Question ${index + 1} needs between 2 and 6 options.`);
+    }
+    if (
+      question.correctOptionIndex < 0 ||
+      question.correctOptionIndex >= question.options.length ||
+      !question.options[question.correctOptionIndex]?.trim()
+    ) {
+      return fail(`Mark the correct answer for question ${index + 1}.`);
+    }
+  }
+  return ok();
+}
+
+export interface SurveyQuestionDraft {
+  prompt: string;
+  options: string[];
+}
+
+export function validateSurveyDraft(input: {
+  name: string;
+  questions: SurveyQuestionDraft[];
+}): ValidationResult {
+  if (input.name.trim().length === 0) {
+    return fail("Give the survey a name.");
+  }
+  if (input.questions.length === 0) {
+    return fail("Add at least one question.");
+  }
+  for (const [index, question] of input.questions.entries()) {
+    const trimmedOptions = question.options.map((opt) => opt.trim()).filter(Boolean);
+    if (question.prompt.trim().length === 0) {
+      return fail(`Question ${index + 1} needs a prompt.`);
+    }
+    if (trimmedOptions.length < 2 || trimmedOptions.length > 6) {
+      return fail(`Question ${index + 1} needs between 2 and 6 options.`);
+    }
+  }
+  return ok();
+}
