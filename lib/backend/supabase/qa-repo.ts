@@ -90,6 +90,17 @@ export function createQARepository(): QARepository {
       if (error) throw new Error(error.message);
     },
 
+    async getUpvotedQuestionIds(activityId, participantId) {
+      const { data, error } = await supabase
+        .from("question_upvotes")
+        .select("question_id, questions!inner(activity_id)")
+        .eq("participant_id", participantId)
+        .eq("questions.activity_id", activityId)
+        .returns<{ question_id: string }[]>();
+      if (error) throw new Error(error.message);
+      return new Set((data ?? []).map((row) => row.question_id));
+    },
+
     async setAnswered(questionId, answered) {
       const { error } = await supabase
         .from("questions")

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { backend } from "@/lib/backend";
 import type { AudienceQuestion } from "@/lib/backend";
 import { rankQuestions } from "@/lib/game/rank-questions";
@@ -78,6 +78,21 @@ export default function QuestionList({
   const [upvotedIds, setUpvotedIds] = useState<Set<string>>(new Set());
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
 
+  // Bootstraps which questions this participant already upvoted, so the
+  // highlight survives a reload/rejoin instead of resetting to empty —
+  // toggling still updates local state directly afterward (below), this
+  // only seeds the initial value from the server.
+  useEffect(() => {
+    if (!currentParticipantId) return;
+    let cancelled = false;
+    backend.qa.getUpvotedQuestionIds(activityId, currentParticipantId).then((ids) => {
+      if (!cancelled) setUpvotedIds(ids);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activityId, currentParticipantId]);
+
   const ranked = rankQuestions(questions, {
     includeHidden: Boolean(moderatable),
   });
@@ -151,7 +166,7 @@ export default function QuestionList({
                   pendingIds.has(question.id)
                 }
                 onClick={() => handleToggleUpvote(question)}
-                className={`rounded-lg border px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40 ${
+                className={`rounded-lg border px-3 py-1.5 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-spotlight/60 disabled:cursor-not-allowed disabled:opacity-40 ${
                   upvotedIds.has(question.id)
                     ? "border-spotlight bg-spotlight/15 text-spotlight-ink"
                     : isStage
@@ -174,7 +189,7 @@ export default function QuestionList({
                       !question.answered,
                     )
                   }
-                  className="rounded-lg border border-stage-line px-3 py-1.5 text-sm text-stage-text"
+                  className="rounded-lg border border-stage-line px-3 py-1.5 text-sm text-stage-text outline-none focus-visible:ring-2 focus-visible:ring-spotlight/60"
                 >
                   {question.answered ? "Mark unanswered" : "Mark answered"}
                 </button>
@@ -188,7 +203,7 @@ export default function QuestionList({
                       !question.hidden,
                     )
                   }
-                  className="rounded-lg border border-stage-line px-3 py-1.5 text-sm text-stage-text"
+                  className="rounded-lg border border-stage-line px-3 py-1.5 text-sm text-stage-text outline-none focus-visible:ring-2 focus-visible:ring-spotlight/60"
                 >
                   {question.hidden ? "Unhide" : "Hide"}
                 </button>

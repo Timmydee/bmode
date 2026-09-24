@@ -8,7 +8,7 @@ import {
   type SurveyQuestionRow,
 } from "./mappers";
 import type { SurveyRepository } from "../contracts";
-import type { PollActivity } from "../types";
+import type { PollActivity, SurveyQuestion } from "../types";
 
 // Assembles a PollActivity for a survey question directly from
 // survey-repo's own rows, mirroring round-repo.ts's
@@ -17,7 +17,7 @@ import type { PollActivity } from "../types";
 function assembleSurveyQuestionActivity(
   activityRow: ActivityRow,
   optionRows: PollOptionRow[],
-  surveyQuestion: SurveyQuestionRow,
+  surveyId: string,
 ): PollActivity {
   return {
     id: activityRow.id,
@@ -33,31 +33,36 @@ function assembleSurveyQuestionActivity(
     resultsVisibleToParticipants: Boolean(
       activityRow.config.resultsVisibleToParticipants,
     ),
-    surveyId: surveyQuestion.survey_id,
+    surveyId,
   };
 }
 
+// Accepts either the raw row (survey-repo's own internal flow) or the
+// mapped domain SurveyQuestion (every external caller, e.g. the host
+// page) — one lookup implementation for both.
 async function fetchQuestionActivity(
-  surveyQuestion: SurveyQuestionRow,
-): Promise<PollActivity> {
+  surveyQuestion: SurveyQuestionRow | SurveyQuestion,
+): Promise<PollActivity | null> {
+  const activityId =
+    "activity_id" in surveyQuestion ? surveyQuestion.activity_id : surveyQuestion.activityId;
+  const surveyId =
+    "survey_id" in surveyQuestion ? surveyQuestion.survey_id : surveyQuestion.surveyId;
+
   const [{ data: activityRow, error: activityError }, { data: optionRows, error: optionsError }] =
     await Promise.all([
-      supabase
-        .from("activities")
-        .select()
-        .eq("id", surveyQuestion.activity_id)
-        .single<ActivityRow>(),
+      supabase.from("activities").select().eq("id", activityId).maybeSingle<ActivityRow>(),
       supabase
         .from("poll_options")
         .select()
-        .eq("activity_id", surveyQuestion.activity_id)
+        .eq("activity_id", activityId)
         .order("order", { ascending: true })
         .returns<PollOptionRow[]>(),
     ]);
   if (activityError) throw new Error(activityError.message);
   if (optionsError) throw new Error(optionsError.message);
+  if (!activityRow) return null;
 
-  return assembleSurveyQuestionActivity(activityRow, optionRows ?? [], surveyQuestion);
+  return assembleSurveyQuestionActivity(activityRow, optionRows ?? [], surveyId);
 }
 
 export async function fetchSurveyQuestions(
@@ -163,6 +168,10 @@ export function createSurveyRepository(): SurveyRepository {
       return rows.map(mapSurveyQuestionRow);
     },
 
+    async getQuestionActivity(surveyQuestion) {
+      return fetchQuestionActivity(surveyQuestion);
+    },
+
     async activate(surveyId) {
       const { error } = await supabase
         .from("surveys")
@@ -187,12 +196,4 @@ export function createSurveyRepository(): SurveyRepository {
       if (error) throw new Error(error.message);
     },
   };
-}
-
-// Exported for use by the host page, which needs to resolve a survey
-// question's full PollActivity to activate it.
-export async function getSurveyQuestionActivity(
-  surveyQuestion: SurveyQuestionRow,
-): Promise<PollActivity> {
-  return fetchQuestionActivity(surveyQuestion);
 }

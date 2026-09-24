@@ -8,7 +8,7 @@ import {
   type RoundQuestionRow,
 } from "./mappers";
 import type { RoundRepository } from "../contracts";
-import type { PollActivity } from "../types";
+import type { PollActivity, RoundQuestion } from "../types";
 
 // Assembles a PollActivity for a round question directly from round-repo's
 // own rows, rather than threading round-awareness through
@@ -17,7 +17,8 @@ import type { PollActivity } from "../types";
 function assembleRoundQuestionActivity(
   activityRow: ActivityRow,
   optionRows: PollOptionRow[],
-  roundQuestion: RoundQuestionRow,
+  roundId: string,
+  correctOptionId: string,
 ): PollActivity {
   return {
     id: activityRow.id,
@@ -33,32 +34,40 @@ function assembleRoundQuestionActivity(
     resultsVisibleToParticipants: Boolean(
       activityRow.config.resultsVisibleToParticipants,
     ),
-    roundId: roundQuestion.round_id,
-    correctOptionId: roundQuestion.correct_option_id,
+    roundId,
+    correctOptionId,
   };
 }
 
+// Accepts either the raw row (round-repo's own internal flow) or the
+// mapped domain RoundQuestion (every external caller, e.g. the host
+// page) — one lookup implementation for both.
 async function fetchQuestionActivity(
-  roundQuestion: RoundQuestionRow,
-): Promise<PollActivity> {
+  roundQuestion: RoundQuestionRow | RoundQuestion,
+): Promise<PollActivity | null> {
+  const activityId =
+    "activity_id" in roundQuestion ? roundQuestion.activity_id : roundQuestion.activityId;
+  const roundId = "round_id" in roundQuestion ? roundQuestion.round_id : roundQuestion.roundId;
+  const correctOptionId =
+    "correct_option_id" in roundQuestion
+      ? roundQuestion.correct_option_id
+      : roundQuestion.correctOptionId;
+
   const [{ data: activityRow, error: activityError }, { data: optionRows, error: optionsError }] =
     await Promise.all([
-      supabase
-        .from("activities")
-        .select()
-        .eq("id", roundQuestion.activity_id)
-        .single<ActivityRow>(),
+      supabase.from("activities").select().eq("id", activityId).maybeSingle<ActivityRow>(),
       supabase
         .from("poll_options")
         .select()
-        .eq("activity_id", roundQuestion.activity_id)
+        .eq("activity_id", activityId)
         .order("order", { ascending: true })
         .returns<PollOptionRow[]>(),
     ]);
   if (activityError) throw new Error(activityError.message);
   if (optionsError) throw new Error(optionsError.message);
+  if (!activityRow) return null;
 
-  return assembleRoundQuestionActivity(activityRow, optionRows ?? [], roundQuestion);
+  return assembleRoundQuestionActivity(activityRow, optionRows ?? [], roundId, correctOptionId);
 }
 
 export async function fetchRoundQuestions(roundId: string): Promise<RoundQuestionRow[]> {
@@ -178,6 +187,10 @@ export function createRoundRepository(): RoundRepository {
       return rows.map(mapRoundQuestionRow);
     },
 
+    async getQuestionActivity(roundQuestion) {
+      return fetchQuestionActivity(roundQuestion);
+    },
+
     async activate(roundId) {
       const { error } = await supabase
         .from("rounds")
@@ -211,13 +224,4 @@ export function createRoundRepository(): RoundRepository {
       if (error) throw new Error(error.message);
     },
   };
-}
-
-// Exported for use by score-repo.ts and the host page, which both need to
-// resolve a round question's full PollActivity (e.g. to know its
-// correctOptionId) without re-deriving the assembly logic.
-export async function getRoundQuestionActivity(
-  roundQuestion: RoundQuestionRow,
-): Promise<PollActivity> {
-  return fetchQuestionActivity(roundQuestion);
 }

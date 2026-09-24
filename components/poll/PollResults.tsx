@@ -5,10 +5,19 @@ interface PollResultsProps {
   // Round-question reveal only (absent for standalone polls, which keep
   // their existing "current leader" violet highlight below).
   correctOptionId?: string;
+  // Presenter/projector screens need a bigger type floor than the host
+  // control room — see agents/uxspec.md §11.1 ("nothing smaller than
+  // 24px at 1080p"). Host control room keeps the default sizing.
+  variant?: "default" | "stage-large";
 }
 
-export default function PollResults({ results, correctOptionId }: PollResultsProps) {
+export default function PollResults({
+  results,
+  correctOptionId,
+  variant = "default",
+}: PollResultsProps) {
   const leaderCount = Math.max(0, ...results.byOption.map((option) => option.count));
+  const isLarge = variant === "stage-large";
 
   return (
     <div className="flex w-full max-w-2xl flex-col gap-4">
@@ -23,13 +32,22 @@ export default function PollResults({ results, correctOptionId }: PollResultsPro
 
         return (
           <div key={option.optionId} className="flex items-center gap-4">
-            <div className="w-[140px] shrink-0 text-sm text-stage-text sm:w-[220px] sm:text-base">
+            <div
+              className={`w-[140px] shrink-0 text-stage-text sm:w-[220px] ${
+                isLarge ? "text-lg sm:text-xl" : "text-sm sm:text-base"
+              }`}
+            >
+              {/* Leading is otherwise color-only (violet vs. amber bar) —
+                  a text cue keeps the signal legible without color. */}
+              {isLeading && correctOptionId === undefined && "★ "}
               {option.label}
               {isCorrect && " ✓"}
             </div>
-            <div className="h-3.5 flex-1 overflow-hidden rounded-lg border border-stage-line bg-stage-2">
+            <div
+              className={`flex-1 overflow-hidden rounded-lg border border-stage-line bg-stage-2 ${isLarge ? "h-6" : "h-3.5"}`}
+            >
               <div
-                className={`h-full rounded-lg ${
+                className={`h-full rounded-lg transition-[width] duration-500 ease-out ${
                   correctOptionId !== undefined
                     ? isCorrect
                       ? "bg-success"
@@ -42,9 +60,9 @@ export default function PollResults({ results, correctOptionId }: PollResultsPro
               />
             </div>
             <div
-              className={`w-11 shrink-0 text-right font-display text-base font-semibold ${
-                isWrong ? "text-stage-muted" : "text-white"
-              }`}
+              className={`w-14 shrink-0 text-right font-display font-semibold tabular-nums ${
+                isLarge ? "text-2xl" : "text-base"
+              } ${isWrong ? "text-stage-muted" : "text-white"}`}
             >
               {pct}%
             </div>

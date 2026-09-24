@@ -52,6 +52,10 @@ export default function HostPresentPage(
   const round = useRound(sessionId);
   const isRoundQuestion =
     activeActivity?.kind === "poll" && round.currentQuestion?.id === activeActivity.id;
+  const questionTotalSeconds =
+    round.round && round.questionStartedAt && round.questionEndsAt
+      ? Math.round((round.questionEndsAt - round.questionStartedAt) / 1000)
+      : undefined;
   const leaderboard = useLeaderboard(
     (round.round && round.revealed) || round.justEndedRoundId ? sessionId : null,
   );
@@ -121,10 +125,16 @@ export default function HostPresentPage(
         <span className="font-display text-[15px] font-bold tracking-[0.01em] text-stage-muted">
           Game Night
         </span>
-        <span className="text-sm text-stage-muted">
-          Join at {typeof window !== "undefined" ? window.location.host : ""}
-          <JoinCode code={session.joinCode} className="ml-1.5 text-white" />
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-stage-muted">
+            Join at {typeof window !== "undefined" ? window.location.host : ""}
+            <JoinCode code={session.joinCode} className="ml-1.5 text-white" />
+          </span>
+          {/* Persistent corner QR for latecomers during a live activity —
+              the idle screen below already shows a large centered one, so
+              this only appears once something is actually running. */}
+          {activeActivity && joinUrl && <QRCode url={joinUrl} size={64} />}
+        </div>
       </div>
 
       {round.justEndedRoundId && leaderboard ? (
@@ -140,25 +150,25 @@ export default function HostPresentPage(
       ) : activeActivity?.kind === "poll" ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6">
           {isSurveyQuestion && (
-            <p className="text-sm text-stage-muted">
+            <p className="text-lg text-stage-muted">
               {survey.survey?.name} — question {surveyQuestionNumber} of {survey.questions.length}
             </p>
           )}
-          <div className="flex items-center gap-4">
-            <h1 className="max-w-[22ch] text-center font-display text-4xl font-bold sm:text-5xl">
-              {activeActivity.prompt}
-            </h1>
-            {isRoundQuestion && round.questionEndsAt && round.serverTimeAtLastSync && !round.revealed && (
-              <CountdownBadge
-                endsAt={round.questionEndsAt}
-                serverTimeAtLastSync={round.serverTimeAtLastSync}
-                variant="stage"
-              />
-            )}
-          </div>
+          <h1 className="max-w-[22ch] text-center font-display text-4xl font-bold sm:text-5xl">
+            {activeActivity.prompt}
+          </h1>
+          {isRoundQuestion && round.questionEndsAt && round.serverTimeAtLastSync && !round.revealed && (
+            <CountdownBadge
+              endsAt={round.questionEndsAt}
+              serverTimeAtLastSync={round.serverTimeAtLastSync}
+              variant="ring"
+              totalSeconds={questionTotalSeconds}
+            />
+          )}
           {liveResults && "byOption" in liveResults && (
             <PollResults
               results={liveResults}
+              variant="stage-large"
               correctOptionId={
                 isRoundQuestion && round.revealed
                   ? activeActivity.correctOptionId

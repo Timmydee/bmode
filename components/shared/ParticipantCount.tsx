@@ -11,7 +11,7 @@ export default function ParticipantCount({
 
   if (variant === "paper") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-spotlight/20 px-3 py-1 text-sm font-medium text-spotlight-ink">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-spotlight/20 px-3 py-1 text-sm font-medium tabular-nums text-spotlight-ink">
         {count} joined
       </span>
     );
@@ -19,7 +19,7 @@ export default function ParticipantCount({
 
   return (
     <div className="text-sm text-stage-muted">
-      <b className="font-display font-semibold text-white">{count}</b>{" "}
+      <b className="font-display font-semibold tabular-nums text-white">{count}</b>{" "}
       {label}
     </div>
   );

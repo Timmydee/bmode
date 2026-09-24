@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { use, useEffect, useRef, useState, type FormEvent } from "react";
+import { use, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { backend } from "@/lib/backend";
-import type { Activity, AudienceQuestion, Round, Survey } from "@/lib/backend";
+import type { Activity, AudienceQuestion, Round, RoundQuestion, Survey } from "@/lib/backend";
 import { useSession } from "@/lib/hooks/useSession";
 import { useActiveActivity } from "@/lib/hooks/useActiveActivity";
 import { useLiveResults } from "@/lib/hooks/useLiveResults";
@@ -38,7 +38,7 @@ async function advanceOrEndRound(input: {
   sessionId: string;
   round: Round;
   currentQuestion: { id: string; correctOptionId?: string };
-  questions: { id: string; activityId: string; order: number }[];
+  questions: RoundQuestion[];
 }): Promise<void> {
   const { sessionId, round, currentQuestion, questions } = input;
   if (!currentQuestion.correctOptionId || round.currentQuestionStartedAt === null) {
@@ -85,8 +85,8 @@ async function advanceOrEndRound(input: {
     return;
   }
 
-  const nextActivity = await backend.activities.getById(nextQuestionMeta.activityId);
-  if (!nextActivity || nextActivity.kind !== "poll") return;
+  const nextActivity = await backend.rounds.getQuestionActivity(nextQuestionMeta);
+  if (!nextActivity) return;
 
   const startedAt = Date.now();
   const endsAt = startedAt + round.timeLimitSeconds * 1000;
@@ -301,8 +301,8 @@ export default function HostSessionPage(
       if (!roundToActivate || !first) {
         throw new Error("This round has no questions.");
       }
-      const firstActivity = await backend.activities.getById(first.activityId);
-      if (!firstActivity || firstActivity.kind !== "poll") {
+      const firstActivity = await backend.rounds.getQuestionActivity(first);
+      if (!firstActivity) {
         throw new Error("Could not load the round's first question.");
       }
 
@@ -377,7 +377,7 @@ export default function HostSessionPage(
       const questions = await backend.surveys.listQuestions(surveyId);
       const first = questions.find((q) => q.order === 0);
       if (!first) throw new Error("This survey has no questions.");
-      const firstActivity = await backend.activities.getById(first.activityId);
+      const firstActivity = await backend.surveys.getQuestionActivity(first);
       if (!firstActivity) throw new Error("Could not load the survey's first question.");
 
       await backend.surveys.activate(surveyId);
@@ -419,7 +419,7 @@ export default function HostSessionPage(
         return;
       }
 
-      const nextActivity = await backend.activities.getById(nextQuestion.activityId);
+      const nextActivity = await backend.surveys.getQuestionActivity(nextQuestion);
       if (!nextActivity) throw new Error("Could not load the next question.");
 
       await backend.activities.setStatus(nextActivity.id, "live");
@@ -521,7 +521,7 @@ export default function HostSessionPage(
         <div className="flex items-center gap-4">
           <span className="text-sm text-stage-muted">
             Join at {typeof window !== "undefined" ? window.location.host : ""}
-            <JoinCode code={session.joinCode} className="ml-1.5 text-white" />
+            <JoinCode code={session.joinCode} className="ml-1.5 text-white" copyable />
           </span>
           <Link
             href={`/host/${sessionId}/present`}
@@ -563,13 +563,9 @@ export default function HostSessionPage(
           ) : (
             <p className="text-stage-muted">Loading results…</p>
           )}
-          <button
-            type="button"
-            onClick={handleEndRoundNow}
-            className="rounded-[10px] border-[1.5px] border-white/30 px-5 py-2.75 font-medium text-white"
-          >
+          <HostActionButton onClick={handleEndRoundNow} variant="secondary">
             End round now
-          </button>
+          </HostActionButton>
         </div>
       ) : activeActivity?.kind === "poll" && isSurveyQuestion ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6">
@@ -585,22 +581,14 @@ export default function HostSessionPage(
             <p className="text-stage-muted">Loading results…</p>
           )}
           <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleNextSurveyQuestion}
-              className="rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink"
-            >
+            <HostActionButton onClick={handleNextSurveyQuestion} variant="primary">
               {surveyQuestionNumber >= survey.questions.length
                 ? "Finish survey"
                 : "Next question"}
-            </button>
-            <button
-              type="button"
-              onClick={handleEndSurveyNow}
-              className="rounded-[10px] border-[1.5px] border-white/30 px-5 py-2.75 font-medium text-white"
-            >
+            </HostActionButton>
+            <HostActionButton onClick={handleEndSurveyNow} variant="secondary">
               End survey now
-            </button>
+            </HostActionButton>
           </div>
         </div>
       ) : activeActivity?.kind === "poll" ? (
@@ -613,13 +601,9 @@ export default function HostSessionPage(
           ) : (
             <p className="text-stage-muted">Loading results…</p>
           )}
-          <button
-            type="button"
-            onClick={() => handleClose(activeActivity.id)}
-            className="rounded-[10px] border-[1.5px] border-white/30 px-5 py-2.75 font-medium text-white"
-          >
+          <HostActionButton onClick={() => handleClose(activeActivity.id)}>
             Close poll
-          </button>
+          </HostActionButton>
         </div>
       ) : activeActivity?.kind === "wordcloud" ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6">
@@ -631,13 +615,9 @@ export default function HostSessionPage(
           ) : (
             <p className="text-stage-muted">Loading results…</p>
           )}
-          <button
-            type="button"
-            onClick={() => handleClose(activeActivity.id)}
-            className="rounded-[10px] border-[1.5px] border-white/30 px-5 py-2.75 font-medium text-white"
-          >
+          <HostActionButton onClick={() => handleClose(activeActivity.id)}>
             Close word cloud
-          </button>
+          </HostActionButton>
         </div>
       ) : activeActivity?.kind === "qa" ? (
         <div className="flex flex-1 flex-col items-center gap-6 py-6">
@@ -651,13 +631,9 @@ export default function HostSessionPage(
             variant="stage"
             moderatable
           />
-          <button
-            type="button"
-            onClick={() => handleClose(activeActivity.id)}
-            className="rounded-[10px] border-[1.5px] border-white/30 px-5 py-2.75 font-medium text-white"
-          >
+          <HostActionButton onClick={() => handleClose(activeActivity.id)}>
             Close Q&amp;A
-          </button>
+          </HostActionButton>
         </div>
       ) : (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6 text-center">
@@ -710,6 +686,37 @@ export default function HostSessionPage(
         <ParticipantCount count={participantCount} variant="stage" />
       </div>
     </div>
+  );
+}
+
+// One consistent style for "move the session forward" actions across
+// every activity type, instead of the prior mix of filled-vs-outlined
+// buttons for what is conceptually the same action. `primary` (filled
+// spotlight) is the definitive next step for the current screen;
+// `secondary` (outlined) is an escape hatch alongside it. The label is
+// always supplied by the caller so it can keep naming the precise next
+// step (e.g. "Next question" vs. "Finish survey").
+function HostActionButton({
+  onClick,
+  variant = "primary",
+  children,
+}: {
+  onClick: () => void;
+  variant?: "primary" | "secondary";
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        variant === "primary"
+          ? "rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink outline-none transition-colors focus-visible:ring-2 focus-visible:ring-spotlight/60"
+          : "rounded-[10px] border-[1.5px] border-white/30 px-5 py-2.75 font-medium text-white outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white/60"
+      }
+    >
+      {children}
+    </button>
   );
 }
 

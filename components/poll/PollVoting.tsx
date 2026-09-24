@@ -26,6 +26,10 @@ async function submitVoteAndBroadcast(
     optionId,
   });
 
+  // Feature-detected — iOS Safari has no navigator.vibrate; this is a
+  // silent no-op there, not an error.
+  navigator.vibrate?.(30);
+
   const results = await backend.responses.getPollResults(activity.id);
   await backend.realtime.publish(activity.sessionId, {
     type: "poll_results_updated",
@@ -156,7 +160,7 @@ function PollOptionButton({
       type="button"
       disabled={disabled}
       onClick={onSelect}
-      className={`rounded-xl border-[1.5px] px-4 py-4 text-left text-[15px] font-medium transition-colors disabled:cursor-not-allowed ${
+      className={`rounded-xl border-[1.5px] px-4 py-4 text-left text-[15px] font-medium outline-none transition-[color,background-color,border-color,transform] duration-150 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-spotlight/60 disabled:cursor-not-allowed disabled:active:scale-100 ${
         correct
           ? "border-success bg-success/15 text-success-ink"
           : wrong

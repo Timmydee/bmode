@@ -3,6 +3,7 @@ import type {
   Participant,
   Activity,
   ActivityKind,
+  PollActivity,
   PollResults,
   WordCloudResults,
   AudienceQuestion,
@@ -78,6 +79,13 @@ export interface QARepository {
   ): Promise<AudienceQuestion[]>;
   upvote(questionId: string, participantId: string): Promise<void>;
   removeUpvote(questionId: string, participantId: string): Promise<void>;
+  // Which of this activity's questions has the participant already
+  // upvoted — lets the UI restore the "you upvoted this" highlight on
+  // reload/rejoin instead of it resetting to empty every mount.
+  getUpvotedQuestionIds(
+    activityId: string,
+    participantId: string,
+  ): Promise<Set<string>>;
   setAnswered(questionId: string, answered: boolean): Promise<void>;
   setHidden(questionId: string, hidden: boolean): Promise<void>;
 }
@@ -100,6 +108,11 @@ export interface RoundRepository {
   getById(roundId: string): Promise<Round | null>;
   listBySession(sessionId: string): Promise<Round[]>;
   listQuestions(roundId: string): Promise<RoundQuestion[]>;
+  // Resolves one round question's full PollActivity (with roundId/
+  // correctOptionId populated) — always use this instead of
+  // activities.getById() for a round question, since that generic path
+  // never populates those fields.
+  getQuestionActivity(roundQuestion: RoundQuestion): Promise<PollActivity | null>;
 
   // Mutators never broadcast — the caller publishes the SessionEvent,
   // matching activity-repo.ts's convention.
@@ -140,6 +153,10 @@ export interface SurveyRepository {
   getById(surveyId: string): Promise<Survey | null>;
   listBySession(sessionId: string): Promise<Survey[]>;
   listQuestions(surveyId: string): Promise<SurveyQuestion[]>;
+  // Resolves one survey question's full PollActivity (with surveyId
+  // populated) — always use this instead of activities.getById() for a
+  // survey question, since that generic path never populates surveyId.
+  getQuestionActivity(surveyQuestion: SurveyQuestion): Promise<PollActivity | null>;
 
   // Mutators never broadcast — the caller publishes activity_activated /
   // activity_closed directly (a survey question needs no dedicated event
