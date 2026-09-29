@@ -93,8 +93,25 @@ create policy "question scores are publicly readable" on question_scores
 -- auto-advance/scoring — see the zero-budget/no-serverless-cron
 -- constraint), scoped to sessions that host owns, same ownership-subquery
 -- pattern as every host-only mutation elsewhere in this schema.
+--
+-- Both insert AND update policies are required: score-repo.ts writes via
+-- upsert(..., { onConflict: "activity_id,participant_id" }) so an
+-- idempotent re-score (or "End round now" re-scoring the in-progress
+-- question) hits the update branch, which Postgres/PostgREST checks
+-- against RLS separately from the insert branch — an insert-only policy
+-- here previously caused "new row violates row-level security policy" on
+-- any re-score.
 create policy "hosts write scores on their own sessions' questions" on question_scores
   for insert with check (
+    exists (
+      select 1 from activities a
+      join sessions s on s.id = a.session_id
+      where a.id = activity_id and s.host_id = auth.uid()
+    )
+  );
+
+create policy "hosts update scores on their own sessions' questions" on question_scores
+  for update using (
     exists (
       select 1 from activities a
       join sessions s on s.id = a.session_id

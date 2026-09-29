@@ -41,8 +41,21 @@ async function advanceOrEndRound(input: {
   questions: RoundQuestion[];
 }): Promise<void> {
   const { sessionId, round, currentQuestion, questions } = input;
-  if (!currentQuestion.correctOptionId || round.currentQuestionStartedAt === null) {
-    return;
+  // Both should always be present by the time a question's timer expires
+  // — if either is missing, something upstream failed to populate the
+  // round question correctly (a real bug, not an expected state). Throw
+  // instead of silently returning: a silent no-op here means the round
+  // stalls forever on this question with no visible error, which is
+  // exactly the failure mode this guard used to hide.
+  if (!currentQuestion.correctOptionId) {
+    throw new Error(
+      "This question is missing its correct answer — the round can't auto-advance. Try 'End round now'.",
+    );
+  }
+  if (round.currentQuestionStartedAt === null) {
+    throw new Error(
+      "This round has no recorded start time for the current question — it can't auto-advance. Try 'End round now'.",
+    );
   }
 
   await backend.scores.scoreQuestion({

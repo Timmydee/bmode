@@ -71,8 +71,13 @@ export function useRound(
       }
       const questionMeta = questions[round.currentQuestionIndex];
       if (!questionMeta) return;
-      backend.activities.getById(questionMeta.activityId).then((activity) => {
-        if (cancelled || !activity || activity.kind !== "poll") return;
+      // Must use rounds.getQuestionActivity, not activities.getById — the
+      // generic lookup never populates roundId/correctOptionId, which
+      // would silently break advanceOrEndRound's scoring guard on any
+      // reload/remount mid-round (see the host page's handlers, which
+      // hit the identical bug before being fixed to use this method).
+      backend.rounds.getQuestionActivity(questionMeta).then((activity) => {
+        if (cancelled || !activity) return;
         setLoaded({
           sessionId,
           ...EMPTY,
