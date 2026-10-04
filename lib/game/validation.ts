@@ -82,6 +82,31 @@ export interface RoundQuestionDraft {
   correctOptionIndex: number;
 }
 
+// Shared by validateRoundDraft (checks the whole array before final submit)
+// and the host page's per-question "Next" button (checks just the question
+// being left, so a host can't silently skip past a blank one while
+// stepping through a multi-question round with Back/Next).
+export function validateRoundQuestionDraft(
+  question: RoundQuestionDraft,
+  questionNumber: number,
+): ValidationResult {
+  const trimmedOptions = question.options.map((opt) => opt.trim()).filter(Boolean);
+  if (question.prompt.trim().length === 0) {
+    return fail(`Question ${questionNumber} needs a prompt.`);
+  }
+  if (trimmedOptions.length < 2 || trimmedOptions.length > 6) {
+    return fail(`Question ${questionNumber} needs between 2 and 6 options.`);
+  }
+  if (
+    question.correctOptionIndex < 0 ||
+    question.correctOptionIndex >= question.options.length ||
+    !question.options[question.correctOptionIndex]?.trim()
+  ) {
+    return fail(`Mark the correct answer for question ${questionNumber}.`);
+  }
+  return ok();
+}
+
 export function validateRoundDraft(input: {
   name: string;
   timeLimitSeconds: number;
@@ -97,20 +122,8 @@ export function validateRoundDraft(input: {
     return fail("Add at least one question.");
   }
   for (const [index, question] of input.questions.entries()) {
-    const trimmedOptions = question.options.map((opt) => opt.trim()).filter(Boolean);
-    if (question.prompt.trim().length === 0) {
-      return fail(`Question ${index + 1} needs a prompt.`);
-    }
-    if (trimmedOptions.length < 2 || trimmedOptions.length > 6) {
-      return fail(`Question ${index + 1} needs between 2 and 6 options.`);
-    }
-    if (
-      question.correctOptionIndex < 0 ||
-      question.correctOptionIndex >= question.options.length ||
-      !question.options[question.correctOptionIndex]?.trim()
-    ) {
-      return fail(`Mark the correct answer for question ${index + 1}.`);
-    }
+    const result = validateRoundQuestionDraft(question, index + 1);
+    if (!result.valid) return result;
   }
   return ok();
 }
@@ -118,6 +131,22 @@ export function validateRoundDraft(input: {
 export interface SurveyQuestionDraft {
   prompt: string;
   options: string[];
+}
+
+// Shared by validateSurveyDraft and the host page's per-question "Next"
+// button — see validateRoundQuestionDraft above for why this is split out.
+export function validateSurveyQuestionDraft(
+  question: SurveyQuestionDraft,
+  questionNumber: number,
+): ValidationResult {
+  const trimmedOptions = question.options.map((opt) => opt.trim()).filter(Boolean);
+  if (question.prompt.trim().length === 0) {
+    return fail(`Question ${questionNumber} needs a prompt.`);
+  }
+  if (trimmedOptions.length < 2 || trimmedOptions.length > 6) {
+    return fail(`Question ${questionNumber} needs between 2 and 6 options.`);
+  }
+  return ok();
 }
 
 export function validateSurveyDraft(input: {
@@ -131,13 +160,8 @@ export function validateSurveyDraft(input: {
     return fail("Add at least one question.");
   }
   for (const [index, question] of input.questions.entries()) {
-    const trimmedOptions = question.options.map((opt) => opt.trim()).filter(Boolean);
-    if (question.prompt.trim().length === 0) {
-      return fail(`Question ${index + 1} needs a prompt.`);
-    }
-    if (trimmedOptions.length < 2 || trimmedOptions.length > 6) {
-      return fail(`Question ${index + 1} needs between 2 and 6 options.`);
-    }
+    const result = validateSurveyQuestionDraft(question, index + 1);
+    if (!result.valid) return result;
   }
   return ok();
 }

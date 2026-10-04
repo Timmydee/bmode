@@ -13,7 +13,9 @@ import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
 import { useSurvey } from "@/lib/hooks/useSurvey";
 import {
   validateRoundDraft,
+  validateRoundQuestionDraft,
   validateSurveyDraft,
+  validateSurveyQuestionDraft,
   type RoundQuestionDraft,
   type SurveyQuestionDraft,
 } from "@/lib/game/validation";
@@ -685,14 +687,7 @@ export default function HostSessionPage(
           }
           onActivate={handleActivate}
         />
-        <CreatePollForm sessionId={sessionId} onCreated={refreshActivities} />
-        <CreateWordCloudForm
-          sessionId={sessionId}
-          onCreated={refreshActivities}
-        />
-        <CreateQAForm sessionId={sessionId} onCreated={refreshActivities} />
-        <CreateRoundForm sessionId={sessionId} onCreated={refreshActivities} />
-        <CreateSurveyForm sessionId={sessionId} onCreated={refreshActivities} />
+        <CreateActivitySection sessionId={sessionId} onCreated={refreshActivities} />
       </div>
 
       <div className="mt-10 flex items-center justify-between">
@@ -836,6 +831,92 @@ function SurveyQueue({
         </li>
       ))}
     </ul>
+  );
+}
+
+type ActivityCreationKind = "poll" | "wordcloud" | "qa" | "round" | "survey";
+
+const ACTIVITY_CREATION_KINDS: { kind: ActivityCreationKind; label: string }[] = [
+  { kind: "poll", label: "Poll" },
+  { kind: "wordcloud", label: "Word cloud" },
+  { kind: "qa", label: "Q&A" },
+  { kind: "round", label: "Round" },
+  { kind: "survey", label: "Survey" },
+];
+
+// Replaces the old always-visible stack of all 5 create-forms: pick a
+// type, fill in just that one form, submit collapses back to the picker.
+// Each form keeps mounting/unmounting on selection rather than being
+// hidden via CSS, so switching types always starts from a clean, empty
+// form instead of leftover state bleeding between types.
+function CreateActivitySection({
+  sessionId,
+  onCreated,
+}: {
+  sessionId: string;
+  onCreated: () => void;
+}) {
+  const [creatingKind, setCreatingKind] = useState<ActivityCreationKind | null>(null);
+
+  function handleCreated() {
+    onCreated();
+    setCreatingKind(null);
+  }
+
+  return (
+    <div className="mt-8 flex flex-col gap-4 border-t border-stage-line pt-8">
+      <p className="text-sm font-medium text-stage-muted">Add an activity</p>
+      <div className="flex flex-wrap gap-2">
+        {ACTIVITY_CREATION_KINDS.map(({ kind, label }) => (
+          <TypeChip
+            key={kind}
+            label={label}
+            selected={creatingKind === kind}
+            onClick={() => setCreatingKind((current) => (current === kind ? null : kind))}
+          />
+        ))}
+      </div>
+      {creatingKind === "poll" && (
+        <CreatePollForm sessionId={sessionId} onCreated={handleCreated} />
+      )}
+      {creatingKind === "wordcloud" && (
+        <CreateWordCloudForm sessionId={sessionId} onCreated={handleCreated} />
+      )}
+      {creatingKind === "qa" && (
+        <CreateQAForm sessionId={sessionId} onCreated={handleCreated} />
+      )}
+      {creatingKind === "round" && (
+        <CreateRoundForm sessionId={sessionId} onCreated={handleCreated} />
+      )}
+      {creatingKind === "survey" && (
+        <CreateSurveyForm sessionId={sessionId} onCreated={handleCreated} />
+      )}
+    </div>
+  );
+}
+
+function TypeChip({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`rounded-[10px] px-4 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-spotlight/60 ${
+        selected
+          ? "bg-spotlight text-spotlight-ink"
+          : "border-[1.5px] border-stage-line text-stage-text"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -992,7 +1073,7 @@ function CreateWordCloudForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-3">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <p className="text-sm font-medium text-stage-muted">Create a word cloud</p>
       <input
         value={prompt}
@@ -1061,7 +1142,7 @@ function CreateQAForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-3">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <p className="text-sm font-medium text-stage-muted">Create a Q&amp;A</p>
       <input
         value={prompt}
@@ -1093,6 +1174,7 @@ function CreateRoundForm({
   const [questionDrafts, setQuestionDrafts] = useState<RoundQuestionDraft[]>([
     { prompt: "", options: ["", ""], correctOptionIndex: 0 },
   ]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1137,16 +1219,38 @@ function CreateRoundForm({
   }
 
   function addQuestion() {
-    setQuestionDrafts((prev) => [
-      ...prev,
-      { prompt: "", options: ["", ""], correctOptionIndex: 0 },
-    ]);
+    setQuestionDrafts((prev) => {
+      const next = [...prev, { prompt: "", options: ["", ""], correctOptionIndex: 0 }];
+      setCurrentQuestionIndex(next.length - 1);
+      return next;
+    });
+    setError(null);
   }
 
   function removeQuestion(index: number) {
-    setQuestionDrafts((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
+    setQuestionDrafts((prev) => {
+      if (prev.length <= 1) return prev;
+      const next = prev.filter((_, i) => i !== index);
+      setCurrentQuestionIndex((current) => Math.min(current, next.length - 1));
+      return next;
+    });
+  }
+
+  function goToQuestion(index: number) {
+    setError(null);
+    setCurrentQuestionIndex(index);
+  }
+
+  function handleNext() {
+    const result = validateRoundQuestionDraft(
+      questionDrafts[currentQuestionIndex],
+      currentQuestionIndex + 1,
     );
+    if (!result.valid) {
+      setError(result.error ?? "Check this question before moving on.");
+      return;
+    }
+    goToQuestion(currentQuestionIndex + 1);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -1174,6 +1278,7 @@ function CreateRoundForm({
       setName("");
       setTimeLimitSeconds(20);
       setQuestionDrafts([{ prompt: "", options: ["", ""], correctOptionIndex: 0 }]);
+      setCurrentQuestionIndex(0);
       onCreated();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create the round.");
@@ -1183,7 +1288,7 @@ function CreateRoundForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4 border-t border-stage-line pt-8">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <p className="text-sm font-medium text-stage-muted">Create a round (Fastest Finger)</p>
       <input
         value={name}
@@ -1203,89 +1308,103 @@ function CreateRoundForm({
         />
       </label>
 
-      <div className="flex flex-col gap-4">
-        {questionDrafts.map((question, qIndex) => (
-          <div
-            key={qIndex}
-            className="flex flex-col gap-2 rounded-xl border border-stage-line bg-stage-2 p-4"
+      <div className="flex items-center justify-between text-sm text-stage-muted">
+        <span>
+          Question {currentQuestionIndex + 1} of {questionDrafts.length}
+        </span>
+        {questionDrafts.length > 1 && (
+          <button
+            type="button"
+            onClick={() => removeQuestion(currentQuestionIndex)}
+            className="text-sm text-stage-muted underline"
           >
-            <div className="flex items-center gap-2">
+            Remove this question
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-xl border border-stage-line bg-stage-2 p-4">
+        <input
+          value={questionDrafts[currentQuestionIndex].prompt}
+          onChange={(event) =>
+            updateQuestion(currentQuestionIndex, { prompt: event.target.value })
+          }
+          placeholder={`Question ${currentQuestionIndex + 1}`}
+          className="flex-1 rounded-[10px] border-[1.5px] border-stage-line bg-stage px-4 py-2.5 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
+        />
+        <div className="flex flex-col gap-2">
+          {questionDrafts[currentQuestionIndex].options.map((option, oIndex) => (
+            <div key={oIndex} className="flex items-center gap-2">
               <input
-                value={question.prompt}
-                onChange={(event) => updateQuestion(qIndex, { prompt: event.target.value })}
-                placeholder={`Question ${qIndex + 1}`}
-                className="flex-1 rounded-[10px] border-[1.5px] border-stage-line bg-stage px-4 py-2.5 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
+                type="radio"
+                name={`correct-${currentQuestionIndex}`}
+                checked={questionDrafts[currentQuestionIndex].correctOptionIndex === oIndex}
+                onChange={() =>
+                  updateQuestion(currentQuestionIndex, { correctOptionIndex: oIndex })
+                }
+                aria-label={`Mark option ${oIndex + 1} as correct`}
+                className="accent-success"
               />
-              {questionDrafts.length > 1 && (
+              <input
+                value={option}
+                onChange={(event) =>
+                  updateQuestionOption(currentQuestionIndex, oIndex, event.target.value)
+                }
+                placeholder={`Option ${oIndex + 1}`}
+                className="flex-1 rounded-[10px] border-[1.5px] border-stage-line bg-stage px-4 py-2 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
+              />
+              {questionDrafts[currentQuestionIndex].options.length > 2 && (
                 <button
                   type="button"
-                  onClick={() => removeQuestion(qIndex)}
-                  aria-label={`Remove question ${qIndex + 1}`}
+                  onClick={() => removeQuestionOption(currentQuestionIndex, oIndex)}
+                  aria-label={`Remove option ${oIndex + 1}`}
                   className="rounded-[10px] border-[1.5px] border-stage-line px-3 text-stage-muted"
                 >
                   ×
                 </button>
               )}
             </div>
-            <div className="flex flex-col gap-2">
-              {question.options.map((option, oIndex) => (
-                <div key={oIndex} className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name={`correct-${qIndex}`}
-                    checked={question.correctOptionIndex === oIndex}
-                    onChange={() => updateQuestion(qIndex, { correctOptionIndex: oIndex })}
-                    aria-label={`Mark option ${oIndex + 1} as correct`}
-                    className="accent-success"
-                  />
-                  <input
-                    value={option}
-                    onChange={(event) => updateQuestionOption(qIndex, oIndex, event.target.value)}
-                    placeholder={`Option ${oIndex + 1}`}
-                    className="flex-1 rounded-[10px] border-[1.5px] border-stage-line bg-stage px-4 py-2 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
-                  />
-                  {question.options.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => removeQuestionOption(qIndex, oIndex)}
-                      aria-label={`Remove option ${oIndex + 1}`}
-                      className="rounded-[10px] border-[1.5px] border-stage-line px-3 text-stage-muted"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            {question.options.length < 6 && (
-              <button
-                type="button"
-                onClick={() => addQuestionOption(qIndex)}
-                className="self-start text-sm text-stage-muted underline"
-              >
-                Add option
-              </button>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
+        {questionDrafts[currentQuestionIndex].options.length < 6 && (
+          <button
+            type="button"
+            onClick={() => addQuestionOption(currentQuestionIndex)}
+            className="self-start text-sm text-stage-muted underline"
+          >
+            Add option
+          </button>
+        )}
       </div>
 
-      <button
-        type="button"
-        onClick={addQuestion}
-        className="self-start text-sm text-stage-muted underline"
-      >
-        Add question
-      </button>
-
       {error && <p className="text-sm text-ember">{error}</p>}
-      <button
-        type="submit"
-        disabled={creating}
-        className="mt-2 self-start rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink disabled:opacity-60"
-      >
-        {creating ? "Creating…" : "Create round"}
-      </button>
+
+      <div className="flex flex-wrap items-center gap-3">
+        {currentQuestionIndex > 0 && (
+          <HostActionButton
+            onClick={() => goToQuestion(currentQuestionIndex - 1)}
+            variant="secondary"
+          >
+            Back
+          </HostActionButton>
+        )}
+        {currentQuestionIndex < questionDrafts.length - 1 ? (
+          <HostActionButton onClick={handleNext} variant="primary">
+            Next
+          </HostActionButton>
+        ) : (
+          <HostActionButton onClick={addQuestion} variant="secondary">
+            Add question
+          </HostActionButton>
+        )}
+        <button
+          type="submit"
+          disabled={creating}
+          className="rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink disabled:opacity-60"
+        >
+          {creating ? "Creating…" : "Create round"}
+        </button>
+      </div>
     </form>
   );
 }
@@ -1301,6 +1420,7 @@ function CreateSurveyForm({
   const [questionDrafts, setQuestionDrafts] = useState<SurveyQuestionDraft[]>([
     { prompt: "", options: ["", ""] },
   ]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1337,13 +1457,38 @@ function CreateSurveyForm({
   }
 
   function addQuestion() {
-    setQuestionDrafts((prev) => [...prev, { prompt: "", options: ["", ""] }]);
+    setQuestionDrafts((prev) => {
+      const next = [...prev, { prompt: "", options: ["", ""] }];
+      setCurrentQuestionIndex(next.length - 1);
+      return next;
+    });
+    setError(null);
   }
 
   function removeQuestion(index: number) {
-    setQuestionDrafts((prev) =>
-      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
+    setQuestionDrafts((prev) => {
+      if (prev.length <= 1) return prev;
+      const next = prev.filter((_, i) => i !== index);
+      setCurrentQuestionIndex((current) => Math.min(current, next.length - 1));
+      return next;
+    });
+  }
+
+  function goToQuestion(index: number) {
+    setError(null);
+    setCurrentQuestionIndex(index);
+  }
+
+  function handleNext() {
+    const result = validateSurveyQuestionDraft(
+      questionDrafts[currentQuestionIndex],
+      currentQuestionIndex + 1,
     );
+    if (!result.valid) {
+      setError(result.error ?? "Check this question before moving on.");
+      return;
+    }
+    goToQuestion(currentQuestionIndex + 1);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -1368,6 +1513,7 @@ function CreateSurveyForm({
       });
       setName("");
       setQuestionDrafts([{ prompt: "", options: ["", ""] }]);
+      setCurrentQuestionIndex(0);
       onCreated();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create the survey.");
@@ -1377,7 +1523,7 @@ function CreateSurveyForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4 border-t border-stage-line pt-8">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <p className="text-sm font-medium text-stage-muted">
         Create a survey (bundled feedback polls)
       </p>
@@ -1388,81 +1534,91 @@ function CreateSurveyForm({
         className="rounded-[10px] border-[1.5px] border-stage-line bg-stage-2 px-4 py-3 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
       />
 
-      <div className="flex flex-col gap-4">
-        {questionDrafts.map((question, qIndex) => (
-          <div
-            key={qIndex}
-            className="flex flex-col gap-2 rounded-xl border border-stage-line bg-stage-2 p-4"
+      <div className="flex items-center justify-between text-sm text-stage-muted">
+        <span>
+          Question {currentQuestionIndex + 1} of {questionDrafts.length}
+        </span>
+        {questionDrafts.length > 1 && (
+          <button
+            type="button"
+            onClick={() => removeQuestion(currentQuestionIndex)}
+            className="text-sm text-stage-muted underline"
           >
-            <div className="flex items-center gap-2">
+            Remove this question
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-xl border border-stage-line bg-stage-2 p-4">
+        <input
+          value={questionDrafts[currentQuestionIndex].prompt}
+          onChange={(event) => updateQuestionPrompt(currentQuestionIndex, event.target.value)}
+          placeholder={`Question ${currentQuestionIndex + 1}`}
+          className="flex-1 rounded-[10px] border-[1.5px] border-stage-line bg-stage px-4 py-2.5 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
+        />
+        <div className="flex flex-col gap-2">
+          {questionDrafts[currentQuestionIndex].options.map((option, oIndex) => (
+            <div key={oIndex} className="flex items-center gap-2">
               <input
-                value={question.prompt}
-                onChange={(event) => updateQuestionPrompt(qIndex, event.target.value)}
-                placeholder={`Question ${qIndex + 1}`}
-                className="flex-1 rounded-[10px] border-[1.5px] border-stage-line bg-stage px-4 py-2.5 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
+                value={option}
+                onChange={(event) =>
+                  updateQuestionOption(currentQuestionIndex, oIndex, event.target.value)
+                }
+                placeholder={`Option ${oIndex + 1}`}
+                className="flex-1 rounded-[10px] border-[1.5px] border-stage-line bg-stage px-4 py-2 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
               />
-              {questionDrafts.length > 1 && (
+              {questionDrafts[currentQuestionIndex].options.length > 2 && (
                 <button
                   type="button"
-                  onClick={() => removeQuestion(qIndex)}
-                  aria-label={`Remove question ${qIndex + 1}`}
+                  onClick={() => removeQuestionOption(currentQuestionIndex, oIndex)}
+                  aria-label={`Remove option ${oIndex + 1}`}
                   className="rounded-[10px] border-[1.5px] border-stage-line px-3 text-stage-muted"
                 >
                   ×
                 </button>
               )}
             </div>
-            <div className="flex flex-col gap-2">
-              {question.options.map((option, oIndex) => (
-                <div key={oIndex} className="flex items-center gap-2">
-                  <input
-                    value={option}
-                    onChange={(event) => updateQuestionOption(qIndex, oIndex, event.target.value)}
-                    placeholder={`Option ${oIndex + 1}`}
-                    className="flex-1 rounded-[10px] border-[1.5px] border-stage-line bg-stage px-4 py-2 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
-                  />
-                  {question.options.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => removeQuestionOption(qIndex, oIndex)}
-                      aria-label={`Remove option ${oIndex + 1}`}
-                      className="rounded-[10px] border-[1.5px] border-stage-line px-3 text-stage-muted"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            {question.options.length < 6 && (
-              <button
-                type="button"
-                onClick={() => addQuestionOption(qIndex)}
-                className="self-start text-sm text-stage-muted underline"
-              >
-                Add option
-              </button>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
+        {questionDrafts[currentQuestionIndex].options.length < 6 && (
+          <button
+            type="button"
+            onClick={() => addQuestionOption(currentQuestionIndex)}
+            className="self-start text-sm text-stage-muted underline"
+          >
+            Add option
+          </button>
+        )}
       </div>
 
-      <button
-        type="button"
-        onClick={addQuestion}
-        className="self-start text-sm text-stage-muted underline"
-      >
-        Add question
-      </button>
-
       {error && <p className="text-sm text-ember">{error}</p>}
-      <button
-        type="submit"
-        disabled={creating}
-        className="mt-2 self-start rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink disabled:opacity-60"
-      >
-        {creating ? "Creating…" : "Create survey"}
-      </button>
+
+      <div className="flex flex-wrap items-center gap-3">
+        {currentQuestionIndex > 0 && (
+          <HostActionButton
+            onClick={() => goToQuestion(currentQuestionIndex - 1)}
+            variant="secondary"
+          >
+            Back
+          </HostActionButton>
+        )}
+        {currentQuestionIndex < questionDrafts.length - 1 ? (
+          <HostActionButton onClick={handleNext} variant="primary">
+            Next
+          </HostActionButton>
+        ) : (
+          <HostActionButton onClick={addQuestion} variant="secondary">
+            Add question
+          </HostActionButton>
+        )}
+        <button
+          type="submit"
+          disabled={creating}
+          className="rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink disabled:opacity-60"
+        >
+          {creating ? "Creating…" : "Create survey"}
+        </button>
+      </div>
     </form>
   );
 }

@@ -5,7 +5,9 @@ import {
   validatePollOptionSelection,
   validateQuestion,
   validateRoundDraft,
+  validateRoundQuestionDraft,
   validateSurveyDraft,
+  validateSurveyQuestionDraft,
   validateWord,
 } from "./validation";
 
@@ -180,6 +182,62 @@ describe("validateSurveyDraft", () => {
 
   it("accepts a well-formed survey", () => {
     const result = validateSurveyDraft({ name: "Feedback", questions: [validQuestion] });
+    expect(result.valid).toBe(true);
+  });
+});
+
+describe("validateRoundQuestionDraft", () => {
+  it("rejects a blank prompt with a question-numbered message", () => {
+    const result = validateRoundQuestionDraft(
+      { prompt: "  ", options: ["A", "B"], correctOptionIndex: 0 },
+      2,
+    );
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("2");
+  });
+
+  it("rejects fewer than 2 non-empty options", () => {
+    const result = validateRoundQuestionDraft(
+      { prompt: "Q", options: ["Only one"], correctOptionIndex: 0 },
+      1,
+    );
+    expect(result.valid).toBe(false);
+  });
+
+  it("rejects a missing/blank correct answer", () => {
+    const result = validateRoundQuestionDraft(
+      { prompt: "Q", options: ["A", "B"], correctOptionIndex: -1 },
+      1,
+    );
+    expect(result.valid).toBe(false);
+  });
+
+  it("accepts a well-formed question", () => {
+    const result = validateRoundQuestionDraft(
+      { prompt: "Capital of France?", options: ["Paris", "London"], correctOptionIndex: 0 },
+      1,
+    );
+    expect(result.valid).toBe(true);
+  });
+});
+
+describe("validateSurveyQuestionDraft", () => {
+  it("rejects a blank prompt with a question-numbered message", () => {
+    const result = validateSurveyQuestionDraft({ prompt: "  ", options: ["A", "B"] }, 3);
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("3");
+  });
+
+  it("rejects fewer than 2 non-empty options", () => {
+    const result = validateSurveyQuestionDraft({ prompt: "Q", options: ["Only one"] }, 1);
+    expect(result.valid).toBe(false);
+  });
+
+  it("accepts a well-formed question", () => {
+    const result = validateSurveyQuestionDraft(
+      { prompt: "How was the food?", options: ["Great", "Bad"] },
+      1,
+    );
     expect(result.valid).toBe(true);
   });
 });
