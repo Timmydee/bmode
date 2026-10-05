@@ -13,8 +13,8 @@ const instrumentSans = Instrument_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Game Night",
-  description: "Live polls, word clouds, and Q&A for meetings and events.",
+  title: "Bmode",
+  description: "Helping people connect through better questions.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

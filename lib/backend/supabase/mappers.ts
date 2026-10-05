@@ -1,5 +1,14 @@
 import type {
   Activity,
+  Circle,
+  CircleAnswer,
+  CircleDepth,
+  CircleQuestion,
+  CircleQuestionPhase,
+  CircleQuestionSource,
+  CircleRecap,
+  CircleSettings,
+  CircleStatus,
   ActivityKind,
   ActivityStatus,
   AudienceQuestion,
@@ -266,6 +275,96 @@ export function mapQuestionRow(
     upvotes,
     answered: row.answered,
     hidden: row.hidden,
+    submittedAt: new Date(row.submitted_at),
+  };
+}
+
+export interface CircleRow {
+  id: string;
+  session_id: string;
+  name: string;
+  status: CircleStatus;
+  settings: CircleSettings;
+  order: number;
+  current_question_id: string | null;
+  depth: CircleDepth;
+  pot: number;
+  bond_prior: number;
+  recap: CircleRecap | null;
+}
+
+export function mapCircleRow(row: CircleRow): Circle {
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    name: row.name,
+    status: row.status,
+    settings: {
+      vibe: row.settings.vibe ?? "know",
+      questionCount: row.settings.questionCount ?? 8,
+      rewardStyle: row.settings.rewardStyle ?? "together",
+      answerMode: row.settings.answerMode ?? "typed",
+      customQuestions: row.settings.customQuestions ?? [],
+    },
+    order: row.order,
+    currentQuestionId: row.current_question_id,
+    depth: row.depth,
+    pot: row.pot,
+    bondPrior: row.bond_prior,
+    recap: row.recap,
+  };
+}
+
+export interface CircleQuestionRow {
+  id: string;
+  circle_id: string;
+  order: number;
+  text: string;
+  follow_up: string | null;
+  depth: CircleDepth;
+  source: CircleQuestionSource;
+  phase: CircleQuestionPhase;
+  spotlight_participant_id: string | null;
+  participant_count: number | null;
+  went_deeper: boolean;
+}
+
+export function mapCircleQuestionRow(row: CircleQuestionRow): CircleQuestion {
+  return {
+    id: row.id,
+    circleId: row.circle_id,
+    order: row.order,
+    text: row.text,
+    followUp: row.follow_up,
+    depth: row.depth,
+    source: row.source,
+    phase: row.phase,
+    spotlightParticipantId: row.spotlight_participant_id,
+    participantCount: row.participant_count,
+    wentDeeper: row.went_deeper,
+  };
+}
+
+// Selected with the author's nickname joined in (participants(nickname)),
+// so the reveal can name each answer without a second fetch.
+export interface CircleAnswerRow {
+  id: string;
+  circle_question_id: string;
+  participant_id: string;
+  text: string | null;
+  skipped: boolean;
+  submitted_at: string;
+  participants: { nickname: string | null } | null;
+}
+
+export function mapCircleAnswerRow(row: CircleAnswerRow): CircleAnswer {
+  return {
+    id: row.id,
+    circleQuestionId: row.circle_question_id,
+    participantId: row.participant_id,
+    nickname: row.participants?.nickname ?? null,
+    text: row.text,
+    skipped: row.skipped,
     submittedAt: new Date(row.submitted_at),
   };
 }

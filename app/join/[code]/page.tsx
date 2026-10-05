@@ -8,6 +8,8 @@ import { useSession } from "@/lib/hooks/useSession";
 import { useActiveActivity } from "@/lib/hooks/useActiveActivity";
 import { useRound } from "@/lib/hooks/useRound";
 import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
+import { useCircle } from "@/lib/hooks/useCircle";
+import CirclePlayerView from "@/components/circle/CirclePlayerView";
 import { validateNickname } from "@/lib/game/validation";
 import ParticipantCount from "@/components/shared/ParticipantCount";
 import PollVoting from "@/components/poll/PollVoting";
@@ -48,6 +50,7 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
   );
   const isRoundQuestion =
     activity?.kind === "poll" && round.currentQuestion?.id === activity.id;
+  const circleGame = useCircle(sessionId);
 
   const [nickname, setNickname] = useState("");
   const [joining, setJoining] = useState(false);
@@ -131,6 +134,16 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
           </button>
         </form>
       </div>
+    );
+  }
+
+  if (circleGame.state) {
+    return (
+      <CirclePlayerView
+        sessionId={sessionByCode.id}
+        participantId={participant.id}
+        state={circleGame.state}
+      />
     );
   }
 

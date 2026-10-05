@@ -1,5 +1,6 @@
 import type { Backend } from "../contracts";
 import { createActivityRepository } from "./activity-repo";
+import { createCircleRepository } from "./circle-repo";
 import { createAuthClient } from "./auth";
 import { createParticipantRepository } from "./participant-repo";
 import { createQARepository } from "./qa-repo";
@@ -20,6 +21,7 @@ export function createSupabaseBackend(): Backend {
     rounds: createRoundRepository(),
     scores: createScoreRepository(),
     surveys: createSurveyRepository(),
+    circles: createCircleRepository(),
     realtime: createSupabaseRealtime(),
     auth: createAuthClient(),
   };

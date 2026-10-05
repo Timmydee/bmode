@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { use, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { backend } from "@/lib/backend";
-import type { Activity, AudienceQuestion, Round, RoundQuestion, Survey } from "@/lib/backend";
+import type { Activity, AudienceQuestion, Circle, Round, RoundQuestion, Survey } from "@/lib/backend";
 import { useSession } from "@/lib/hooks/useSession";
 import { useActiveActivity } from "@/lib/hooks/useActiveActivity";
 import { useLiveResults } from "@/lib/hooks/useLiveResults";
@@ -11,6 +11,10 @@ import { useRound } from "@/lib/hooks/useRound";
 import { useCountdown } from "@/lib/hooks/useCountdown";
 import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
 import { useSurvey } from "@/lib/hooks/useSurvey";
+import { useCircle } from "@/lib/hooks/useCircle";
+import { startCircle } from "@/lib/circle/actions";
+import CircleHostView from "@/components/circle/CircleHostView";
+import CreateCircleForm from "@/components/circle/CreateCircleForm";
 import {
   validateRoundDraft,
   validateRoundQuestionDraft,
@@ -171,12 +175,16 @@ export default function HostSessionPage(
   const [activities, setActivities] = useState<Activity[]>([]);
   const [rounds, setRounds] = useState<Round[]>([]);
   const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [circles, setCircles] = useState<Circle[]>([]);
+  const circleGame = useCircle(sessionId);
+  const circleRunning = Boolean(circleGame.state);
   const [refreshKey, setRefreshKey] = useState(0);
   useEffect(() => {
     if (!sessionId) return;
     backend.activities.listBySession(sessionId).then(setActivities);
     backend.rounds.listBySession(sessionId).then(setRounds);
     backend.surveys.listBySession(sessionId).then(setSurveys);
+    backend.circles.listBySession(sessionId).then(setCircles);
   }, [sessionId, refreshKey]);
   function refreshActivities() {
     setRefreshKey((key) => key + 1);
@@ -386,6 +394,17 @@ export default function HostSessionPage(
     }
   }
 
+  async function handleActivateCircle(circle: Circle) {
+    setActionError(null);
+    try {
+      await startCircle(sessionId, circle);
+      circleGame.refresh();
+      refreshActivities();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Could not start that Circle.");
+    }
+  }
+
   async function handleActivateSurvey(surveyId: string) {
     setActionError(null);
     try {
@@ -531,7 +550,7 @@ export default function HostSessionPage(
     <div className="flex flex-1 flex-col bg-stage px-8 py-10 text-white sm:px-12 sm:py-14">
       <div className="mb-10 flex items-center justify-between">
         <span className="font-display text-[15px] font-bold tracking-[0.01em] text-stage-muted">
-          Game Night
+          Bmode
         </span>
         <div className="flex items-center gap-4">
           <span className="text-sm text-stage-muted">
@@ -548,7 +567,19 @@ export default function HostSessionPage(
         </div>
       </div>
 
-      {round.justEndedRoundId && leaderboard ? (
+      {circleGame.state ? (
+        <CircleHostView
+          sessionId={sessionId}
+          hostId={session.hostId}
+          joinCode={session.joinCode}
+          state={circleGame.state}
+          participantCount={participantCount}
+          onChanged={() => {
+            circleGame.refresh();
+            refreshActivities();
+          }}
+        />
+      ) : round.justEndedRoundId && leaderboard ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6">
           <h1 className="font-display text-3xl font-bold sm:text-4xl">🎉 Winners 🎉</h1>
           <WinnersPodium leaderboard={leaderboard} variant="stage" />
@@ -666,15 +697,25 @@ export default function HostSessionPage(
         {actionError && (
           <p className="mb-4 text-sm text-ember">{actionError}</p>
         )}
+        <CircleQueue
+          circles={circles}
+          disabled={
+            Boolean(activeActivity) ||
+            circleRunning ||
+            round.round?.status === "live" ||
+            survey.survey?.status === "live"
+          }
+          onActivate={handleActivateCircle}
+        />
         <RoundQueue
           rounds={rounds}
-          hasLiveActivity={Boolean(activeActivity)}
+          hasLiveActivity={Boolean(activeActivity) || circleRunning}
           hasLiveRound={round.round?.status === "live"}
           onActivate={handleActivateRound}
         />
         <SurveyQueue
           surveys={surveys}
-          hasLiveActivity={Boolean(activeActivity)}
+          hasLiveActivity={Boolean(activeActivity) || circleRunning}
           hasLiveSurvey={survey.survey?.status === "live"}
           onActivate={handleActivateSurvey}
         />
@@ -682,6 +723,7 @@ export default function HostSessionPage(
           activities={activities}
           hasLiveActivity={
             Boolean(activeActivity) ||
+            circleRunning ||
             round.round?.status === "live" ||
             survey.survey?.status === "live"
           }
@@ -798,6 +840,46 @@ function RoundQueue({
   );
 }
 
+function CircleQueue({
+  circles,
+  disabled,
+  onActivate,
+}: {
+  circles: Circle[];
+  disabled: boolean;
+  onActivate: (circle: Circle) => void;
+}) {
+  const queued = circles.filter((circle) => circle.status === "draft");
+  if (queued.length === 0) return null;
+
+  return (
+    <ul className="mb-8 flex flex-col gap-2">
+      {queued.map((circle) => (
+        <li
+          key={circle.id}
+          className="flex items-center justify-between rounded-xl border border-stage-line bg-stage-2 px-4 py-3"
+        >
+          <span className="text-sm text-stage-text">
+            {circle.name}
+            <span className="ml-2 text-stage-muted">
+              {circle.settings.questionCount} questions ·{" "}
+              {circle.settings.rewardStyle === "together" ? "Together" : "Competitive"}
+            </span>
+          </span>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onActivate(circle)}
+            className="rounded-[10px] bg-spotlight px-4 py-2 text-sm font-medium text-spotlight-ink disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Start Circle
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function SurveyQueue({
   surveys,
   hasLiveActivity,
@@ -834,9 +916,10 @@ function SurveyQueue({
   );
 }
 
-type ActivityCreationKind = "poll" | "wordcloud" | "qa" | "round" | "survey";
+type ActivityCreationKind = "circle" | "poll" | "wordcloud" | "qa" | "round" | "survey";
 
 const ACTIVITY_CREATION_KINDS: { kind: ActivityCreationKind; label: string }[] = [
+  { kind: "circle", label: "Circle" },
   { kind: "poll", label: "Poll" },
   { kind: "wordcloud", label: "Word cloud" },
   { kind: "qa", label: "Q&A" },
@@ -876,6 +959,9 @@ function CreateActivitySection({
           />
         ))}
       </div>
+      {creatingKind === "circle" && (
+        <CreateCircleForm sessionId={sessionId} onCreated={handleCreated} />
+      )}
       {creatingKind === "poll" && (
         <CreatePollForm sessionId={sessionId} onCreated={handleCreated} />
       )}
