@@ -80,4 +80,19 @@ export type SessionEvent =
       type: "leaderboard_updated";
       leaderboard: Leaderboard;
       serverTime: number;
+    }
+  // --- Circle (Bmode). Deliberately coarse: a circle's state is several
+  // small tables (question, answers, hearts, votes), so instead of
+  // mirroring each one in its own event, clients treat these as "refetch"
+  // signals (see lib/hooks/useCircle.ts). Answers never travel over the
+  // wire — clients read them from the database and only show them once
+  // the question is revealed. circle_updated comes from the host (started,
+  // revealed, next question, recap, closed); circle_answers_changed from
+  // participants (answered, hearted, voted). ---
+  | { type: "circle_updated"; circleId: string; serverTime: number }
+  | {
+      type: "circle_answers_changed";
+      circleId: string;
+      circleQuestionId: string | null; // null for award votes on the recap
+      serverTime: number;
     };

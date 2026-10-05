@@ -3,14 +3,16 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="mx-auto max-w-3xl px-6 py-20 sm:px-10 sm:py-28">
-      <p className="mb-3 text-sm text-ink-soft">Game Night</p>
-      <h1 className="mb-6 max-w-[11ch] font-display text-5xl font-bold leading-[1.02] text-ink sm:text-6xl">
-        Live audience input, right from the room
+      <p className="mb-3 text-sm text-ink-soft">Bmode</p>
+      <h1 className="mb-6 max-w-[13ch] font-display text-5xl font-bold leading-[1.02] text-ink sm:text-6xl">
+        Helping people connect through better questions
       </h1>
       <p className="mb-12 max-w-[58ch] text-lg text-ink-soft">
-        Run polls, word clouds, and moderated Q&amp;A from your laptop or
-        projector — your audience joins from their own phones, no account and
-        no app install.
+        Start a Circle with friends or your partner: everyone answers the same
+        question on their own phone, then the answers reveal together. Earn
+        Sparks, grow your bond, and go deeper when everyone’s in. Polls, word
+        clouds and Q&amp;A are still here for bigger rooms. No account and no
+        app install.
       </p>
       <div className="flex flex-wrap gap-3">
         <Link

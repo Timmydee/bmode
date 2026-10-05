@@ -187,3 +187,96 @@ export interface SurveyQuestion {
   activityId: string;
   order: number;
 }
+
+/* ---------- Circle (Bmode) ---------- */
+// A Circle is a conversation game for a small group in the same room:
+// everyone gets the same question, answers privately on their own phone,
+// then all answers reveal together. Like Survey it's host-paced, but its
+// questions aren't poll activities — they're picked one at a time as the
+// game runs (the next question's depth depends on the group's vote), so
+// they live in their own table instead of `activities`.
+
+export type CircleStatus = "draft" | "live" | "recap" | "ended";
+export type CircleVibe = "chill" | "know" | "deeper" | "reconnect";
+export type CircleRewardStyle = "together" | "competitive";
+export type CircleAnswerMode = "typed" | "out_loud";
+export type CircleDepth = 1 | 2 | 3; // Light, Real, Deep
+export type CircleQuestionPhase = "answering" | "revealed" | "done";
+export type CircleQuestionSource = "library" | "custom";
+export type CircleAward = "best" | "surprising";
+
+export interface CircleSettings {
+  vibe: CircleVibe;
+  questionCount: number;
+  rewardStyle: CircleRewardStyle;
+  answerMode: CircleAnswerMode;
+  customQuestions: string[]; // written by the host, mixed into the game
+}
+
+export interface Circle {
+  id: string;
+  sessionId: string;
+  name: string;
+  status: CircleStatus;
+  settings: CircleSettings;
+  order: number;
+  currentQuestionId: string | null;
+  depth: CircleDepth; // depth the next question is drawn at
+  pot: number; // Sparks earned so far, updated by the host on each advance
+  bondPrior: number; // the group's Bond Sparks before this game started
+  recap: CircleRecap | null; // set when the game ends
+}
+
+export interface CircleQuestion {
+  id: string;
+  circleId: string;
+  order: number;
+  text: string;
+  followUp: string | null;
+  depth: CircleDepth;
+  source: CircleQuestionSource;
+  phase: CircleQuestionPhase;
+  spotlightParticipantId: string | null;
+  participantCount: number | null; // people in the room at reveal
+  wentDeeper: boolean; // set on advance when the group voted unanimously
+}
+
+export interface CircleAnswer {
+  id: string;
+  circleQuestionId: string;
+  participantId: string;
+  nickname: string | null;
+  text: string | null; // null for skipped or out-loud answers
+  skipped: boolean;
+  submittedAt: Date;
+}
+
+export interface CircleHeart {
+  answerId: string;
+  participantId: string;
+}
+
+export interface CircleAwardVote {
+  circleId: string;
+  participantId: string;
+  award: CircleAward;
+  nomineeParticipantId: string;
+}
+
+export interface CircleBadge {
+  id: string;
+  icon: string;
+  name: string;
+  detail: string;
+}
+
+export interface CircleRecap {
+  pot: number;
+  bondBefore: number;
+  bondAfter: number;
+  rewardStyle: CircleRewardStyle;
+  players: { participantId: string; nickname: string | null; sparks: number; rank: number | null }[];
+  badges: CircleBadge[];
+  questionOfTheNight: string | null;
+  questionsPlayed: number;
+}

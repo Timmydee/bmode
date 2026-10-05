@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   normalizeWord,
+  parseCustomQuestions,
+  validateCircleAnswer,
+  validateCircleDraft,
   validateNickname,
   validatePollOptionSelection,
   validateQuestion,
@@ -239,5 +242,26 @@ describe("validateSurveyQuestionDraft", () => {
       1,
     );
     expect(result.valid).toBe(true);
+  });
+});
+
+describe("Circle validation", () => {
+  it("requires a non-empty answer within the length limit", () => {
+    expect(validateCircleAnswer("  ").valid).toBe(false);
+    expect(validateCircleAnswer("x".repeat(241)).valid).toBe(false);
+    expect(validateCircleAnswer("My grandmother's kitchen").valid).toBe(true);
+  });
+
+  it("checks the game name, question count and custom questions", () => {
+    const base = { name: "Friday", questionCount: 8, customQuestions: [] };
+    expect(validateCircleDraft(base).valid).toBe(true);
+    expect(validateCircleDraft({ ...base, name: " " }).valid).toBe(false);
+    expect(validateCircleDraft({ ...base, questionCount: 7 }).valid).toBe(false);
+    expect(validateCircleDraft({ ...base, customQuestions: ["x".repeat(161)] }).valid).toBe(false);
+    expect(validateCircleDraft({ ...base, customQuestions: Array(21).fill("Q?") }).valid).toBe(false);
+  });
+
+  it("reads one custom question per non-empty line", () => {
+    expect(parseCustomQuestions(" First?\n\n  Second? \n")).toEqual(["First?", "Second?"]);
   });
 });

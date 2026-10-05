@@ -13,6 +13,18 @@ import type {
   Leaderboard,
   Survey,
   SurveyQuestion,
+  Circle,
+  CircleAnswer,
+  CircleAward,
+  CircleAwardVote,
+  CircleDepth,
+  CircleHeart,
+  CircleQuestion,
+  CircleQuestionPhase,
+  CircleQuestionSource,
+  CircleRecap,
+  CircleSettings,
+  CircleStatus,
 } from "./types";
 import type { SessionEvent } from "./events";
 
@@ -166,6 +178,69 @@ export interface SurveyRepository {
   endSurvey(surveyId: string): Promise<void>;
 }
 
+export interface CircleRepository {
+  create(input: { sessionId: string; name: string; settings: CircleSettings }): Promise<Circle>;
+  getById(circleId: string): Promise<Circle | null>;
+  listBySession(sessionId: string): Promise<Circle[]>;
+  listQuestions(circleId: string): Promise<CircleQuestion[]>; // ordered
+  listAnswers(circleQuestionIds: string[]): Promise<CircleAnswer[]>;
+  listHearts(answerIds: string[]): Promise<CircleHeart[]>;
+  listDeeperVotes(circleQuestionId: string): Promise<string[]>; // participant ids
+  listAwardVotes(circleId: string): Promise<CircleAwardVote[]>;
+
+  // Host-side mutators. Like every other repository, these never
+  // broadcast — the caller publishes circle_updated afterwards. The game
+  // rules that decide these values live in lib/game/circle.ts.
+  addQuestion(input: {
+    circleId: string;
+    order: number;
+    text: string;
+    followUp: string | null;
+    depth: CircleDepth;
+    source: CircleQuestionSource;
+  }): Promise<CircleQuestion>;
+  updateCircle(
+    circleId: string,
+    patch: Partial<{
+      status: CircleStatus;
+      currentQuestionId: string | null;
+      depth: CircleDepth;
+      pot: number;
+      bondPrior: number;
+      recap: CircleRecap | null;
+    }>,
+  ): Promise<void>;
+  updateQuestion(
+    circleQuestionId: string,
+    patch: Partial<{
+      phase: CircleQuestionPhase;
+      spotlightParticipantId: string | null;
+      participantCount: number;
+      wentDeeper: boolean;
+    }>,
+  ): Promise<void>;
+  // A group's Bond (Sparks carried across games), keyed by host + the
+  // group's nicknames — see circleGroupKey in lib/game/circle.ts.
+  getBond(hostId: string, groupKey: string): Promise<number>;
+  saveBond(hostId: string, groupKey: string, sparks: number): Promise<void>;
+
+  // Participant-side writes. The caller publishes circle_answers_changed.
+  submitAnswer(input: {
+    circleQuestionId: string;
+    participantId: string;
+    text: string | null;
+    skipped: boolean;
+  }): Promise<void>;
+  setHeart(input: { answerId: string; participantId: string; on: boolean }): Promise<void>;
+  setDeeperVote(input: { circleQuestionId: string; participantId: string; on: boolean }): Promise<void>;
+  voteAward(input: {
+    circleId: string;
+    participantId: string;
+    award: CircleAward;
+    nomineeParticipantId: string;
+  }): Promise<void>;
+}
+
 export interface RealtimeClient {
   /** Subscribe to everything happening in one session. */
   subscribe(
@@ -201,6 +276,7 @@ export interface Backend {
   rounds: RoundRepository;
   scores: ScoreRepository;
   surveys: SurveyRepository;
+  circles: CircleRepository;
   realtime: RealtimeClient;
   auth: AuthClient;
 }

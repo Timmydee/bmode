@@ -1,4 +1,4 @@
-# Game Night — Build Progress
+# Bmode (formerly Game Night) — Build Progress
 
 Tracking against `agents/prd-and-build-guide.md` §9 phased build plan.
 
@@ -344,3 +344,47 @@ QR code or join link, without me intervening. While doing it, check:
   within about a second?
 
 I can't run this step myself — it's a human validation, not a code check.
+
+
+## Bmode: Circle mode (2026-10-05)
+
+The app is renamed Bmode ("helping people connect through better
+questions") and gains **Circle**, a conversation game for friend groups and
+couples. Everyone gets the same question, answers privately on their own
+phone, and the answers reveal together. The existing polls, word clouds,
+Q&A, rounds and surveys are unchanged.
+
+What's in:
+
+- **Host setup:** name, vibe (Chill, Get to know, Go deeper, Reconnect),
+  5/8/12 questions, reward style (Together or Competitive), answer mode
+  (Typed or Out loud), and the host's own questions mixed into a
+  48-question library.
+- **Play:** auto-reveal once every phone has answered (or "Reveal now"),
+  a rotating spotlight with a follow-up prompt, hearts on other people's
+  answers, and a unanimous "go deeper" vote that moves Light → Real → Deep.
+- **Rewards (in-app):** Sparks (answer +10, heart received +3, Full Circle
+  +20, going deeper +15; skipping costs nothing), a group Bond that
+  carries across games (Strangers → Acquaintances → Friends → Close →
+  Kindred, keyed by host + the group's nicknames), badges, question of the
+  night, and end-of-game award votes. Together style never ranks people;
+  Competitive shows standings.
+- **Screens:** host control page, projector view (read-only), and player
+  phones.
+
+Where it lives: rules in `lib/game/circle.ts` (pure, tested), library in
+`lib/game/circle-questions.ts`, repository in
+`lib/backend/supabase/circle-repo.ts`, host/player steps in
+`lib/circle/actions.ts`, state in `lib/hooks/useCircle.ts`, UI in
+`components/circle/`. Two new events (`circle_updated`,
+`circle_answers_changed`) are refetch signals; answer text is never
+broadcast.
+
+Checked: `npm run lint`, `npx tsc --noEmit`, `npm test` (83 passed) and
+`next build`. **Not yet live-verified:** migration
+`supabase/migrations/0008_circles.sql` must be applied to the Supabase
+project, then a real game played on 2+ phones.
+
+Deferred: voice answers (needs a Storage bucket), AI-suggested questions
+(needs an API key), players adding questions mid-game, player accounts and
+streaks, and growing the library toward 300 questions.

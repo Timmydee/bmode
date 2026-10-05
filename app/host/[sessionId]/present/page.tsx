@@ -9,6 +9,8 @@ import { useLiveResults } from "@/lib/hooks/useLiveResults";
 import { useRound } from "@/lib/hooks/useRound";
 import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
 import { useSurvey } from "@/lib/hooks/useSurvey";
+import { useCircle } from "@/lib/hooks/useCircle";
+import CircleHostView from "@/components/circle/CircleHostView";
 import JoinCode from "@/components/shared/JoinCode";
 import QRCode from "@/components/shared/QRCode";
 import ParticipantCount from "@/components/shared/ParticipantCount";
@@ -66,6 +68,7 @@ export default function HostPresentPage(
     isSurveyQuestion && activeActivity
       ? survey.questions.findIndex((q) => q.activityId === activeActivity.id) + 1
       : 0;
+  const circleGame = useCircle(sessionId);
 
   if (loading || viewerId === undefined) {
     return (
@@ -123,7 +126,7 @@ export default function HostPresentPage(
     <div className="flex flex-1 flex-col bg-stage px-8 py-10 text-white sm:px-16 sm:py-14">
       <div className="mb-10 flex items-center justify-between">
         <span className="font-display text-[15px] font-bold tracking-[0.01em] text-stage-muted">
-          Game Night
+          Bmode
         </span>
         <div className="flex items-center gap-3">
           <span className="text-sm text-stage-muted">
@@ -133,11 +136,20 @@ export default function HostPresentPage(
           {/* Persistent corner QR for latecomers during a live activity —
               the idle screen below already shows a large centered one, so
               this only appears once something is actually running. */}
-          {activeActivity && joinUrl && <QRCode url={joinUrl} size={64} />}
+          {(activeActivity || circleGame.state) && joinUrl && <QRCode url={joinUrl} size={64} />}
         </div>
       </div>
 
-      {round.justEndedRoundId && leaderboard ? (
+      {circleGame.state ? (
+        <CircleHostView
+          sessionId={sessionId}
+          hostId={session.hostId}
+          joinCode={session.joinCode}
+          state={circleGame.state}
+          participantCount={participantCount}
+          readOnly
+        />
+      ) : round.justEndedRoundId && leaderboard ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6">
           <h1 className="font-display text-4xl font-bold sm:text-5xl">🎉 Winners 🎉</h1>
           <WinnersPodium leaderboard={leaderboard} variant="stage" />

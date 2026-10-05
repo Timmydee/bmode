@@ -165,3 +165,56 @@ export function validateSurveyDraft(input: {
   }
   return ok();
 }
+
+export const CIRCLE_ANSWER_MAX_LENGTH = 240;
+export const CIRCLE_CUSTOM_QUESTION_MAX_LENGTH = 160;
+export const CIRCLE_MAX_CUSTOM_QUESTIONS = 20;
+export const CIRCLE_QUESTION_COUNTS = [5, 8, 12] as const;
+
+export function validateCircleAnswer(text: string): ValidationResult {
+  const trimmed = text.trim();
+  if (trimmed.length === 0) {
+    return fail("Type an answer, or tap Skip.");
+  }
+  if (trimmed.length > CIRCLE_ANSWER_MAX_LENGTH) {
+    return fail(`Answers must be ${CIRCLE_ANSWER_MAX_LENGTH} characters or fewer.`);
+  }
+  if (containsProfanity(trimmed)) {
+    return fail("That answer includes a word that isn't allowed here. Please rephrase it.");
+  }
+  return ok();
+}
+
+export function validateCircleDraft(input: {
+  name: string;
+  questionCount: number;
+  customQuestions: string[];
+}): ValidationResult {
+  if (input.name.trim().length === 0) {
+    return fail("Give the game a name.");
+  }
+  if (!(CIRCLE_QUESTION_COUNTS as readonly number[]).includes(input.questionCount)) {
+    return fail("Pick 5, 8 or 12 questions.");
+  }
+  if (input.customQuestions.length > CIRCLE_MAX_CUSTOM_QUESTIONS) {
+    return fail(`Add up to ${CIRCLE_MAX_CUSTOM_QUESTIONS} of your own questions.`);
+  }
+  for (const [index, question] of input.customQuestions.entries()) {
+    const trimmed = question.trim();
+    if (trimmed.length > CIRCLE_CUSTOM_QUESTION_MAX_LENGTH) {
+      return fail(`Your question ${index + 1} must be ${CIRCLE_CUSTOM_QUESTION_MAX_LENGTH} characters or fewer.`);
+    }
+    if (containsProfanity(trimmed)) {
+      return fail(`Your question ${index + 1} includes a word that isn't allowed here.`);
+    }
+  }
+  return ok();
+}
+
+// Turns the host's one-question-per-line textarea into a clean list.
+export function parseCustomQuestions(raw: string): string[] {
+  return raw
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
