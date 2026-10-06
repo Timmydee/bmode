@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   normalizeWord,
-  parseCustomQuestions,
   validateCircleAnswer,
   validateCircleDraft,
+  validateCircleQuestion,
   validateNickname,
   validatePollOptionSelection,
   validateQuestion,
@@ -252,16 +252,19 @@ describe("Circle validation", () => {
     expect(validateCircleAnswer("My grandmother's kitchen").valid).toBe(true);
   });
 
-  it("checks the game name, question count and custom questions", () => {
-    const base = { name: "Friday", questionCount: 8, customQuestions: [] };
-    expect(validateCircleDraft(base).valid).toBe(true);
-    expect(validateCircleDraft({ ...base, name: " " }).valid).toBe(false);
-    expect(validateCircleDraft({ ...base, questionCount: 7 }).valid).toBe(false);
-    expect(validateCircleDraft({ ...base, customQuestions: ["x".repeat(161)] }).valid).toBe(false);
-    expect(validateCircleDraft({ ...base, customQuestions: Array(21).fill("Q?") }).valid).toBe(false);
+  it("checks the game name and the picked questions", () => {
+    const three = [{ text: "A?" }, { text: "B?" }, { text: "C?" }];
+    expect(validateCircleDraft({ name: "Friday", questions: three }).valid).toBe(true);
+    expect(validateCircleDraft({ name: " ", questions: three }).valid).toBe(false);
+    expect(validateCircleDraft({ name: "Friday", questions: three.slice(0, 2) }).valid).toBe(false);
+    expect(validateCircleDraft({ name: "Friday", questions: Array(21).fill({ text: "Q?" }) }).valid).toBe(false);
+    expect(validateCircleDraft({ name: "Friday", questions: [...three, { text: "x".repeat(161) }] }).error).toMatch(
+      /^Question 4/,
+    );
   });
 
-  it("reads one custom question per non-empty line", () => {
-    expect(parseCustomQuestions(" First?\n\n  Second? \n")).toEqual(["First?", "Second?"]);
+  it("rejects an empty question of your own", () => {
+    expect(validateCircleQuestion("   ").valid).toBe(false);
+    expect(validateCircleQuestion("What’s a trip we still need to take?").valid).toBe(true);
   });
 });

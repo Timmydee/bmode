@@ -1,7 +1,7 @@
 import type {
   CircleBadge,
+  CirclePlannedQuestion,
   CircleDepth,
-  CircleQuestionSource,
   CircleRecap,
   CircleRewardStyle,
   CircleVibe,
@@ -40,16 +40,11 @@ export const BOND_LEVELS = [
   { name: "Kindred", at: 1000 },
 ] as const;
 
-export interface PickedQuestion {
-  text: string;
-  followUp: string | null;
-  depth: CircleDepth;
-  source: CircleQuestionSource;
-}
+export type PickedQuestion = CirclePlannedQuestion;
 
 const RECONNECT_SHARE = 0.6;
 
-// Custom questions alternate with library ones (every second question)
+// Without a plan, custom questions alternate with library ones (every second question)
 // until they run out, so a host's own questions are spread through the
 // game instead of all landing at the start. Library questions are drawn at
 // the current depth, never repeating within a game.
@@ -61,9 +56,19 @@ export function pickNextQuestion(input: {
   customQuestions: string[];
   random: () => number;
   library?: readonly LibraryQuestion[];
+  plan?: readonly CirclePlannedQuestion[]; // the host's picked questions
 }): PickedQuestion {
   const library = input.library ?? CIRCLE_QUESTIONS;
   const used = new Set(input.usedTexts);
+
+  // A host-picked plan is played in order, except that after the group
+  // votes to go deeper the next unused question at the new depth jumps
+  // the queue. Only once the plan runs out does the library take over.
+  const planLeft = (input.plan ?? []).filter((q) => !used.has(q.text));
+  if (planLeft.length > 0) {
+    return { ...(planLeft.find((q) => q.depth === input.depth) ?? planLeft[0]) };
+  }
+
   const remainingCustom = input.customQuestions.filter((text) => !used.has(text));
 
   let pool = library.filter((q) => !used.has(q.text));
@@ -292,4 +297,63 @@ export function circleGroupKey(nicknames: (string | null)[]): string {
 
 export function displayName(nickname: string | null): string {
   return nickname?.trim() || "Guest";
+}
+
+// Builds the starting set the host sees in the question picker: a gentle
+// warm-up that gets deeper as the game goes on (the first ~40% at the
+// vibe's starting depth, the next ~40% one level deeper, the rest deeper
+// still). Chill never goes past Real; Reconnect leans on catch-up
+// questions. The host can then swap, reorder, remove or add to it.
+export function suggestQuestionSet(input: {
+  vibe: CircleVibe;
+  count: number;
+  random: () => number;
+  library?: readonly LibraryQuestion[];
+}): CirclePlannedQuestion[] {
+  const library = input.library ?? CIRCLE_QUESTIONS;
+  const start = CIRCLE_VIBES[input.vibe].startDepth;
+  const cap: CircleDepth = input.vibe === "chill" ? 2 : 3;
+  const picked: CirclePlannedQuestion[] = [];
+
+  for (let i = 0; i < input.count; i++) {
+    const stage = i < Math.ceil(input.count * 0.4) ? 0 : i < Math.ceil(input.count * 0.8) ? 1 : 2;
+    const depth = Math.min(cap, start + stage) as CircleDepth;
+    const used = new Set(picked.map((q) => q.text));
+    let pool = library.filter((q) => !used.has(q.text) && q.depth <= depth);
+    if (input.vibe === "reconnect") {
+      const reconnect = pool.filter((q) => q.reconnect);
+      if (reconnect.length > 0 && input.random() < RECONNECT_SHARE) pool = reconnect;
+    } else {
+      pool = pool.filter((q) => !q.reconnect);
+    }
+    // Prefer the target depth; never go deeper than it.
+    const atDepth = pool.filter((q) => q.depth === depth);
+    const candidates = atDepth.length > 0 ? atDepth : pool;
+    if (candidates.length === 0) continue;
+    const q = candidates[Math.floor(input.random() * candidates.length)] ?? candidates[0];
+    picked.push({ text: q.text, followUp: q.followUp, depth: q.depth, source: "library" });
+  }
+  return picked;
+}
+
+// A different library question at the same depth, for the picker's swap
+// button. Returns null when nothing unused is left at that depth.
+export function swapQuestion(input: {
+  question: CirclePlannedQuestion;
+  vibe: CircleVibe;
+  usedTexts: string[];
+  random: () => number;
+  library?: readonly LibraryQuestion[];
+}): CirclePlannedQuestion | null {
+  const library = input.library ?? CIRCLE_QUESTIONS;
+  const used = new Set(input.usedTexts);
+  const pool = library.filter(
+    (q) =>
+      q.depth === input.question.depth &&
+      !used.has(q.text) &&
+      (input.vibe === "reconnect" || !q.reconnect),
+  );
+  if (pool.length === 0) return null;
+  const q = pool[Math.floor(input.random() * pool.length)] ?? pool[0];
+  return { text: q.text, followUp: q.followUp, depth: q.depth, source: "library" };
 }

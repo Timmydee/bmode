@@ -205,12 +205,23 @@ export type CircleQuestionPhase = "answering" | "revealed" | "done";
 export type CircleQuestionSource = "library" | "custom";
 export type CircleAward = "best" | "surprising";
 
+// A question the host picked (or wrote) before the game started.
+export interface CirclePlannedQuestion {
+  text: string;
+  followUp: string | null;
+  depth: CircleDepth;
+  source: CircleQuestionSource;
+}
+
 export interface CircleSettings {
   vibe: CircleVibe;
   questionCount: number;
   rewardStyle: CircleRewardStyle;
   answerMode: CircleAnswerMode;
-  customQuestions: string[]; // written by the host, mixed into the game
+  // The host's chosen questions, in play order. Empty on circles created
+  // before the question picker existed; those draw from the library.
+  questions: CirclePlannedQuestion[];
+  customQuestions: string[]; // legacy: written by the host, mixed into the game
 }
 
 export interface Circle {

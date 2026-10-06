@@ -80,8 +80,11 @@ export function useCircle(sessionId: string | null): UseCircleResult {
       .then((state) => {
         if (seq === loadSeq.current) setLoaded({ sessionId, state });
       })
-      .catch(() => {
-        // Keep showing the last good state; the next event retries.
+      .catch((error) => {
+        // Keep showing the last good state; the next event retries. Logged
+        // so a failing query is visible in the console instead of the game
+        // silently never appearing.
+        console.error("Could not load the Circle:", error);
       });
   }, [sessionId]);
 
