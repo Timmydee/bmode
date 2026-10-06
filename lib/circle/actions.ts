@@ -42,6 +42,7 @@ async function addNextQuestion(
     questionIndex: played.length,
     usedTexts: played.map((q) => q.text),
     customQuestions: circle.settings.customQuestions,
+    plan: circle.settings.questions,
     random: Math.random,
   });
   return backend.circles.addQuestion({

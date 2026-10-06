@@ -8,6 +8,8 @@ import {
   nextDepth,
   pickNextQuestion,
   scoreCircleQuestion,
+  suggestQuestionSet,
+  swapQuestion,
   type CircleQuestionTally,
 } from "./circle";
 import type { LibraryQuestion } from "./circle-questions";
@@ -100,6 +102,53 @@ describe("pickNextQuestion", () => {
       library: LIBRARY,
     });
     expect(picked.text).toBe("Deep A");
+  });
+});
+
+describe("pickNextQuestion with the host's plan", () => {
+  const plan = [
+    { text: "P1", followUp: null, depth: 1 as const, source: "library" as const },
+    { text: "P2", followUp: null, depth: 1 as const, source: "custom" as const },
+    { text: "P3", followUp: null, depth: 2 as const, source: "library" as const },
+  ];
+  const base = { vibe: "know" as const, customQuestions: [], random: first, library: LIBRARY, plan, questionIndex: 1 };
+
+  it("plays the plan in order", () => {
+    expect(pickNextQuestion({ ...base, depth: 1, usedTexts: ["P1"] }).text).toBe("P2");
+  });
+
+  it("jumps to the next deeper question after going deeper", () => {
+    expect(pickNextQuestion({ ...base, depth: 2, usedTexts: ["P1"] }).text).toBe("P3");
+  });
+
+  it("falls back to the library once the plan runs out", () => {
+    expect(pickNextQuestion({ ...base, depth: 1, usedTexts: ["P1", "P2", "P3"] }).source).toBe("library");
+  });
+});
+
+describe("suggestQuestionSet", () => {
+  it("warms up, then gets deeper, without repeats", () => {
+    const set = suggestQuestionSet({ vibe: "know", count: 5, random: first, library: LIBRARY });
+    expect(set.map((q) => q.depth)).toEqual([1, 1, 2, 3]);
+    expect(new Set(set.map((q) => q.text)).size).toBe(set.length);
+  });
+
+  it("keeps Chill at Real or lighter", () => {
+    const set = suggestQuestionSet({ vibe: "chill", count: 5, random: first, library: LIBRARY });
+    expect(Math.max(...set.map((q) => q.depth))).toBeLessThanOrEqual(2);
+  });
+});
+
+describe("swapQuestion", () => {
+  it("offers another unused question at the same depth", () => {
+    const swapped = swapQuestion({
+      question: { text: "Light A", followUp: "fa", depth: 1, source: "library" },
+      vibe: "know",
+      usedTexts: ["Light A"],
+      random: first,
+      library: LIBRARY,
+    });
+    expect(swapped?.text).toBe("Light B");
   });
 });
 

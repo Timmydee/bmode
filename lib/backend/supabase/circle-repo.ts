@@ -70,7 +70,10 @@ export function createCircleRepository(): CircleRepository {
       if (circleQuestionIds.length === 0) return [];
       const { data, error } = await supabase
         .from("circle_answers")
-        .select("*, participants(nickname)")
+        // "!participant_id" names the direct foreign key. Without it
+        // PostgREST also sees circle_answers <-> participants through
+        // circle_hearts (a many-to-many path) and refuses to embed.
+        .select("*, participants!participant_id(nickname)")
         .in("circle_question_id", circleQuestionIds)
         .order("submitted_at", { ascending: true })
         .returns<CircleAnswerRow[]>();

@@ -304,6 +304,7 @@ export function mapCircleRow(row: CircleRow): Circle {
       questionCount: row.settings.questionCount ?? 8,
       rewardStyle: row.settings.rewardStyle ?? "together",
       answerMode: row.settings.answerMode ?? "typed",
+      questions: row.settings.questions ?? [],
       customQuestions: row.settings.customQuestions ?? [],
     },
     order: row.order,

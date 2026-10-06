@@ -388,3 +388,22 @@ project, then a real game played on 2+ phones.
 Deferred: voice answers (needs a Storage bucket), AI-suggested questions
 (needs an API key), players adding questions mid-game, player accounts and
 streaks, and growing the library toward 300 questions.
+
+### Circle fixes and question picker (2026-10-06)
+
+- **Bug fixed: no question appeared once a Circle started.** Loading the
+  answers embedded `participants(nickname)`, which PostgREST rejects as
+  ambiguous ("more than one relationship was found") because
+  `circle_hearts` also links answers to participants. The load failed
+  silently, so neither the host nor the players ever saw the game. It now
+  names the direct key (`participants!participant_id`) and logs load
+  errors. Verified by running a full game (start → answer → reveal →
+  heart → go deeper → recap → award vote) against a local Postgres +
+  PostgREST with all migrations applied.
+- **Question picker:** creating a Circle is now two steps. After setup the
+  host sees a suggested set for the vibe (warm-up first, deeper later) and
+  can reorder, swap, remove, browse/search the library by depth, write
+  their own with a depth, or re-suggest 5/8/12. The game plays that list
+  in order; a unanimous "go deeper" vote jumps to the next deeper
+  question on it. Queued Circles have a "See questions" preview.
+- No new migration: the list is stored in `circles.settings.questions`.

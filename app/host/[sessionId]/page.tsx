@@ -15,6 +15,7 @@ import { useCircle } from "@/lib/hooks/useCircle";
 import { startCircle } from "@/lib/circle/actions";
 import CircleHostView from "@/components/circle/CircleHostView";
 import CreateCircleForm from "@/components/circle/CreateCircleForm";
+import { CIRCLE_DEPTH_LABELS } from "@/lib/game/circle";
 import {
   validateRoundDraft,
   validateRoundQuestionDraft,
@@ -855,17 +856,45 @@ function CircleQueue({
   return (
     <ul className="mb-8 flex flex-col gap-2">
       {queued.map((circle) => (
-        <li
-          key={circle.id}
-          className="flex items-center justify-between rounded-xl border border-stage-line bg-stage-2 px-4 py-3"
-        >
-          <span className="text-sm text-stage-text">
-            {circle.name}
-            <span className="ml-2 text-stage-muted">
-              {circle.settings.questionCount} questions ·{" "}
-              {circle.settings.rewardStyle === "together" ? "Together" : "Competitive"}
-            </span>
+        <CircleQueueItem key={circle.id} circle={circle} disabled={disabled} onActivate={onActivate} />
+      ))}
+    </ul>
+  );
+}
+
+function CircleQueueItem({
+  circle,
+  disabled,
+  onActivate,
+}: {
+  circle: Circle;
+  disabled: boolean;
+  onActivate: (circle: Circle) => void;
+}) {
+  const [showQuestions, setShowQuestions] = useState(false);
+  const planned = circle.settings.questions;
+
+  return (
+    <li className="rounded-xl border border-stage-line bg-stage-2 px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm text-stage-text">
+          {circle.name}
+          <span className="ml-2 text-stage-muted">
+            {circle.settings.questionCount} questions ·{" "}
+            {circle.settings.rewardStyle === "together" ? "Together" : "Competitive"}
           </span>
+        </span>
+        <div className="flex shrink-0 items-center gap-3">
+          {planned.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowQuestions((open) => !open)}
+              aria-expanded={showQuestions}
+              className="text-sm text-stage-muted underline"
+            >
+              {showQuestions ? "Hide questions" : "See questions"}
+            </button>
+          )}
           <button
             type="button"
             disabled={disabled}
@@ -874,9 +903,19 @@ function CircleQueue({
           >
             Start Circle
           </button>
-        </li>
-      ))}
-    </ul>
+        </div>
+      </div>
+      {showQuestions && (
+        <ol className="mt-3 flex list-decimal flex-col gap-1 pl-6 text-sm text-stage-text">
+          {planned.map((question) => (
+            <li key={question.text}>
+              {question.text}
+              <span className="ml-2 text-xs text-stage-muted">{CIRCLE_DEPTH_LABELS[question.depth]}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </li>
   );
 }
 
