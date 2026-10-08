@@ -395,8 +395,14 @@ export function suggestQuestionSet(input: {
   count: number;
   random: () => number;
   library?: readonly LibraryQuestion[];
+  avoidTexts?: string[]; // questions this group has already played
 }): CirclePlannedQuestion[] {
-  const library = input.library ?? CIRCLE_QUESTIONS;
+  const fullLibrary = input.library ?? CIRCLE_QUESTIONS;
+  // Leave out what the group has already played, unless that leaves too
+  // little to build a game from.
+  const avoid = new Set(input.avoidTexts ?? []);
+  const fresh = fullLibrary.filter((q) => !avoid.has(q.text) && isAllowedForVibe(q, input.vibe));
+  const library = fresh.length >= input.count ? fullLibrary.filter((q) => !avoid.has(q.text)) : fullLibrary;
   const start = CIRCLE_VIBES[input.vibe].startDepth;
   const cap: CircleDepth = input.vibe === "chill" ? 2 : 3;
   const picked: CirclePlannedQuestion[] = [];

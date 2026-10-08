@@ -24,7 +24,11 @@ interface LoadedFor {
 export function useSession(
   sessionId: string | null,
   viewerId?: string,
+  // The host's page broadcasts the count for everyone else, even when it
+  // tracks presence as a player (the host playing on their own phone).
+  options: { publishCount?: boolean } = {},
 ): UseSessionResult {
+  const { publishCount } = options;
   const [loaded, setLoaded] = useState<LoadedFor | null>(null);
   const [participantCount, setParticipantCount] = useState(0);
 
@@ -66,6 +70,7 @@ export function useSession(
 
     const unsubscribePresence = viewerId
       ? backend.realtime.trackPresence(sessionId, viewerId, {
+          publishCount,
           onCount: (count) => {
             if (!cancelled) setParticipantCount(count);
           },
@@ -77,7 +82,7 @@ export function useSession(
       unsubscribeEvents();
       unsubscribePresence?.();
     };
-  }, [sessionId, viewerId]);
+  }, [sessionId, viewerId, publishCount]);
 
   if (!sessionId) {
     return { session: null, participantCount: 0, loading: false };

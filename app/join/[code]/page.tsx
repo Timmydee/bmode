@@ -137,7 +137,12 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
     );
   }
 
-  if (circleGame.state) {
+  // A closed Circle's recap stays on screen until the host starts
+  // something else.
+  const circleOnScreen =
+    circleGame.state &&
+    (circleGame.state.circle.status !== "ended" || (!activity && !round.justEndedRoundId));
+  if (circleGame.state && circleOnScreen) {
     return (
       <CirclePlayerView
         sessionId={sessionByCode.id}

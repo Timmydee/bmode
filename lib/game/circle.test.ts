@@ -345,6 +345,24 @@ describe("computeCircleRecap", () => {
   });
 });
 
+describe("suggestQuestionSet avoiding played questions", () => {
+  it("leaves out questions the group already played when enough are left", () => {
+    const set = suggestQuestionSet({ vibe: "know", count: 2, random: first, library: LIBRARY, avoidTexts: ["Light A"] });
+    expect(set.map((q) => q.text)).not.toContain("Light A");
+  });
+
+  it("falls back to the whole library rather than running short", () => {
+    const set = suggestQuestionSet({
+      vibe: "know",
+      count: 4,
+      random: first,
+      library: LIBRARY,
+      avoidTexts: ["Light A", "Light B", "Real A"],
+    });
+    expect(set.map((q) => q.text)).toEqual(["Light A", "Light B", "Real A"]);
+  });
+});
+
 describe("scoreCircleGame", () => {
   it("adds up the pot and each person's Sparks and hearts across questions", () => {
     const totals = scoreCircleGame([
