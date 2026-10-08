@@ -3,12 +3,14 @@ import type { CircleDepth } from "../backend/types";
 // Starter question library for Circle games. Every question is tagged with
 // a depth (1 Light, 2 Real, 3 Deep) and a follow-up for the spotlight;
 // `reconnect` marks catch-up questions for groups who already know each
-// other. The PRD targets 300 questions at launch — this is the first set.
+// other; `couples` marks questions written for two people who are
+// together. The PRD targets 300 questions at launch — this is the first set.
 export interface LibraryQuestion {
   text: string;
   followUp: string;
   depth: CircleDepth;
   reconnect?: boolean;
+  couples?: boolean;
 }
 
 export const CIRCLE_QUESTIONS: readonly LibraryQuestion[] = [
@@ -60,4 +62,22 @@ export const CIRCLE_QUESTIONS: readonly LibraryQuestion[] = [
   { text: "What's something new in your life that we don't know about yet?", followUp: "How did it start?", depth: 1, reconnect: true },
   { text: "What's one thing we should do together soon?", followUp: "Okay, when?", depth: 1, reconnect: true },
   { text: "What's been your biggest win since we last saw each other?", followUp: "Who did you celebrate it with?", depth: 2, reconnect: true },
+  { text: "What's a small thing I do that makes your day better?", followUp: "When did you first notice it?", depth: 1, couples: true },
+  { text: "What was your first impression of me?", followUp: "How wrong were you?", depth: 1, couples: true },
+  { text: "What's our best inside joke?", followUp: "Where did it start?", depth: 1, couples: true },
+  { text: "What's your favourite photo of us, and why?", followUp: "What was happening just before it was taken?", depth: 1, couples: true },
+  { text: "If we had a free day tomorrow, how would you want to spend it together?", followUp: "What's stopping us?", depth: 1, couples: true },
+  { text: "What's a song that reminds you of us?", followUp: "When did it become ours?", depth: 1, couples: true },
+  { text: "Which of our dates would you happily repeat?", followUp: "What would you change the second time?", depth: 1, couples: true },
+  { text: "What's something you've learned from me?", followUp: "Have you ever told me?", depth: 2, couples: true },
+  { text: "When did you first feel at home with me?", followUp: "What was I doing?", depth: 2, couples: true },
+  { text: "What's a habit of mine you secretly love?", followUp: "And one you'd quietly retire?", depth: 2, couples: true },
+  { text: "What's something we should start doing together this year?", followUp: "What's the first step?", depth: 2, couples: true },
+  { text: "When do you feel most supported by me?", followUp: "What could I do more of?", depth: 2, couples: true },
+  { text: "What's a moment you were really proud of me?", followUp: "Did you say so at the time?", depth: 2, couples: true },
+  { text: "What's a dream of yours I might not know about?", followUp: "How can I help with it?", depth: 3, couples: true },
+  { text: "What's something you've wanted to tell me but haven't found the moment for?", followUp: "What made now the moment?", depth: 3, couples: true },
+  { text: "What does feeling loved by me look like, day to day?", followUp: "When did you last feel it?", depth: 3, couples: true },
+  { text: "What's a hard time we got through that made us stronger?", followUp: "What got us through it?", depth: 3, couples: true },
+  { text: "Where do you hope we are in five years?", followUp: "What's one thing we can do this month toward it?", depth: 3, couples: true },
 ];

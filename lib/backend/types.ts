@@ -197,7 +197,7 @@ export interface SurveyQuestion {
 // they live in their own table instead of `activities`.
 
 export type CircleStatus = "draft" | "live" | "recap" | "ended";
-export type CircleVibe = "chill" | "know" | "deeper" | "reconnect";
+export type CircleVibe = "chill" | "know" | "deeper" | "reconnect" | "couples";
 export type CircleRewardStyle = "together" | "competitive";
 export type CircleAnswerMode = "typed" | "out_loud";
 export type CircleDepth = 1 | 2 | 3; // Light, Real, Deep
@@ -286,7 +286,13 @@ export interface CircleRecap {
   bondBefore: number;
   bondAfter: number;
   rewardStyle: CircleRewardStyle;
-  players: { participantId: string; nickname: string | null; sparks: number; rank: number | null }[];
+  players: {
+    participantId: string;
+    nickname: string | null;
+    sparks: number;
+    hearts?: number; // hearts received; missing on recaps saved before it existed
+    rank: number | null;
+  }[];
   badges: CircleBadge[];
   questionOfTheNight: string | null;
   questionsPlayed: number;
