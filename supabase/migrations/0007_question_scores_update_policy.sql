@@ -7,6 +7,12 @@
 -- default-deny, surfacing as "new row violates row-level security policy
 -- (USING expression) for table question_scores". Same ownership-subquery
 -- check as the existing insert policy, just for update.
+--
+-- 0005 was later amended to create this same policy itself, so drop it
+-- first: without this, a fresh database (supabase db reset, a new
+-- environment) fails here with "policy ... already exists".
+
+drop policy if exists "hosts update scores on their own sessions' questions" on question_scores;
 
 create policy "hosts update scores on their own sessions' questions" on question_scores
   for update using (
