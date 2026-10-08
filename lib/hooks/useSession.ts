@@ -13,12 +13,14 @@ interface UseSessionResult {
 interface LoadedFor {
   sessionId: string;
   session: Session | null;
-  participantCount: number;
 }
 
 // viewerId, when provided, registers this viewer's presence on the session
 // so the live participant count reflects it (see architecture-scaffold.md
-// §7 for the pattern this follows).
+// §7 for the pattern this follows). A viewer that tracks presence takes its
+// count from the presence state itself: the participants table counts
+// everyone who ever joined, so seeding from it after a refresh counted
+// people who had already left and stalled the Circle's auto-reveal.
 export function useSession(
   sessionId: string | null,
   viewerId?: string,
@@ -31,21 +33,24 @@ export function useSession(
 
     let cancelled = false;
 
+    const tracksPresence = Boolean(viewerId);
+
     Promise.all([
       backend.sessions.getById(sessionId),
-      backend.participants.countBySession(sessionId),
+      tracksPresence ? null : backend.participants.countBySession(sessionId),
     ]).then(([fetchedSession, count]) => {
       if (cancelled) return;
-      setLoaded({ sessionId, session: fetchedSession, participantCount: count });
-      setParticipantCount(count);
+      setLoaded({ sessionId, session: fetchedSession });
+      if (count !== null) setParticipantCount(count);
     });
 
     const unsubscribeEvents = backend.realtime.subscribe(
       sessionId,
       (event) => {
         if (
-          event.type === "participant_joined" ||
-          event.type === "participant_left"
+          !tracksPresence &&
+          (event.type === "participant_joined" ||
+            event.type === "participant_left")
         ) {
           setParticipantCount(event.participantCount);
         }
@@ -60,7 +65,11 @@ export function useSession(
     );
 
     const unsubscribePresence = viewerId
-      ? backend.realtime.trackPresence(sessionId, viewerId)
+      ? backend.realtime.trackPresence(sessionId, viewerId, {
+          onCount: (count) => {
+            if (!cancelled) setParticipantCount(count);
+          },
+        })
       : undefined;
 
     return () => {
