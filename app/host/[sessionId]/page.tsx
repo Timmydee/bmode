@@ -571,7 +571,7 @@ export default function HostSessionPage(
   if (circleRunning && circleGame.state && hostPlays && hostPlayer.participant) {
     return (
       <div className="flex flex-1 flex-col bg-paper">
-        <div className="sticky top-0 z-40 flex flex-col gap-2 bg-stage px-4 py-3 text-white">
+        <div className="sticky top-0 z-40 flex flex-col gap-2 bg-rail px-4 py-3 text-white shadow-[0_1px_0_rgb(0_0_0/30%)]">
           <div className="flex items-center justify-between gap-3 text-xs text-stage-muted">
             <span>
               You’re hosting · code

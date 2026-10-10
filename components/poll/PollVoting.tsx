@@ -167,7 +167,7 @@ function PollOptionButton({
             ? "border-ember bg-ember/15 text-ember"
             : selected
               ? "border-spotlight bg-spotlight/15 text-spotlight-ink"
-              : "border-hairline bg-white text-ink"
+              : "border-hairline bg-paper-2 text-ink"
       } ${dimmed && !correct && !wrong ? "opacity-50" : ""}`}
     >
       {label}

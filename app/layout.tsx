@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Instrument_Sans } from "next/font/google";
+import { Inter_Tight, Noto_Sans } from "next/font/google";
 import "./globals.css";
 
-const bricolageGrotesque = Bricolage_Grotesque({
-  variable: "--font-bricolage-grotesque",
+// Noto Sans for reading (close to Discord's own UI type) and Inter Tight
+// at heavy weights for headings and the cards, in the spirit of the bold
+// Helvetica on a Cards Against Humanity card.
+const notoSans = Noto_Sans({
+  variable: "--font-noto-sans",
   subsets: ["latin"],
 });
 
-const instrumentSans = Instrument_Sans({
-  variable: "--font-instrument-sans",
+const interTight = Inter_Tight({
+  variable: "--font-inter-tight",
   subsets: ["latin"],
+  weight: ["600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -21,7 +25,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${bricolageGrotesque.variable} ${instrumentSans.variable} h-full antialiased`}
+      className={`${notoSans.variable} ${interTight.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-body">{children}</body>
     </html>

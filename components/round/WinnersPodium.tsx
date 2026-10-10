@@ -64,7 +64,7 @@ export default function WinnersPodium({ leaderboard, variant = "stage" }: Winner
                 ? `border-spotlight bg-spotlight/15 ${isVisible ? "animate-pop-in" : ""}`
                 : isStage
                   ? "border-stage-line bg-stage-2"
-                  : "border-hairline bg-white"
+                  : "border-hairline bg-paper-2"
             }`}
           >
             <span className={`text-3xl ${isWinner && isVisible ? "animate-pop-in" : ""}`}>

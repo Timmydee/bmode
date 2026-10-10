@@ -10,6 +10,7 @@ import { useRound } from "@/lib/hooks/useRound";
 import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
 import { useCircle } from "@/lib/hooks/useCircle";
 import CirclePlayerView from "@/components/circle/CirclePlayerView";
+import { Avatar } from "@/components/circle/Cards";
 import { validateNickname } from "@/lib/game/validation";
 import ParticipantCount from "@/components/shared/ParticipantCount";
 import PollVoting from "@/components/poll/PollVoting";
@@ -110,29 +111,43 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
 
   if (!participant) {
     return (
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-20">
-        <p className="mb-1 text-sm text-ink-soft">Session {code}</p>
-        <h1 className="mb-8 font-display text-3xl font-semibold text-ink">
-          {sessionByCode.title}
-        </h1>
-        <form onSubmit={handleJoin} className="flex flex-col gap-4">
-          <input
-            value={nickname}
-            onChange={(event) => setNickname(event.target.value)}
-            placeholder="Nickname (optional)"
-            maxLength={24}
-            autoFocus
-            className="rounded-[10px] border-[1.5px] border-hairline bg-paper px-4 py-3 text-ink outline-none focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
-          />
-          {joinError && <p className="text-sm text-ember">{joinError}</p>}
-          <button
-            type="submit"
-            disabled={joining}
-            className="rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink disabled:opacity-60"
-          >
-            {joining ? "Joining…" : "Join session"}
-          </button>
-        </form>
+      <div className="flex flex-1 items-center justify-center bg-rail px-4 py-16">
+        {/* Styled as an invite card: who you're joining, then your name. */}
+        <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-lg bg-stage p-8 text-center shadow-[0_8px_32px_rgb(0_0_0/40%)]">
+          <Avatar name={sessionByCode.title} size="lg" shape="squircle" />
+          <div>
+            <p className="mb-1 text-sm text-ink-soft">You’ve been invited to join</p>
+            <h1 className="font-display text-2xl font-extrabold text-ink">
+              {sessionByCode.title}
+            </h1>
+            <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-ink-faint">
+              <span className="h-2 w-2 rounded-full bg-live" />
+              Code {code}
+            </p>
+          </div>
+          <form onSubmit={handleJoin} className="flex w-full flex-col gap-3 text-left">
+            <label className="text-xs font-bold tracking-wide text-ink-soft uppercase" htmlFor="nickname">
+              What should we call you?
+            </label>
+            <input
+              id="nickname"
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+              placeholder="Nickname (optional)"
+              maxLength={24}
+              autoFocus
+              className="rounded-[4px] bg-rail px-3 py-2.5 text-ink outline-none placeholder:text-ink-faint focus-visible:ring-2 focus-visible:ring-blurple"
+            />
+            {joinError && <p className="text-sm text-ember">{joinError}</p>}
+            <button
+              type="submit"
+              disabled={joining}
+              className="mt-2 rounded-[4px] bg-blurple px-5 py-2.75 font-semibold text-white transition-colors hover:bg-spotlight-hover disabled:opacity-60"
+            >
+              {joining ? "Joining…" : "Join session"}
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
@@ -211,11 +226,16 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 px-6 py-20 text-center">
-      <span className="inline-flex items-center gap-1.5 text-sm font-medium text-live">
+      <Avatar
+        name={participant.nickname || "Guest"}
+        size="lg"
+        presence="online"
+      />
+      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-live">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-live" />
         Live
       </span>
-      <h1 className="font-display text-2xl font-semibold text-ink">
+      <h1 className="font-display text-2xl font-extrabold text-ink">
         {sessionByCode.title}
       </h1>
       <p className="text-ink-soft">
