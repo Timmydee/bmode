@@ -2,15 +2,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbf7ef;
-  --foreground: #1c1a24;
+  /* Deep indigo surfaces; see tailwind.config.ts for the tokens. */
+  --background: #14152b;
+  --foreground: #f3f4fb;
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-display: var(--font-bricolage-grotesque);
-  --font-body: var(--font-instrument-sans);
+  --font-card: var(--font-inter-tight);
+  --font-body: var(--font-figtree);
 }
 
 body {
@@ -39,17 +42,108 @@ body {
   }
 }
 
-/* #4CAF6D is the `success` token from tailwind.config.ts — not available
+/* #23A55A is the `success` token from tailwind.config.ts — not available
    as a CSS variable here since it's declared via @config/theme.extend
    rather than an @theme block, so used as a literal (this is a keyframe
    definition, not a component, so there's no Tailwind class to reuse). */
 @keyframes flash-highlight {
   from {
-    background-color: rgb(76 175 109 / 25%);
+    background-color: rgb(35 165 90 / 25%);
   }
   to {
     background-color: transparent;
   }
+}
+
+/* A card slides onto the table, as if dealt. */
+@keyframes deal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-28px) rotate(-6deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--card-tilt, 0deg)) scale(1);
+  }
+}
+
+/* A face-down card turns over: the inner element starts showing its back
+   (rotated half a turn) and settles on its face. See .card-flip below. */
+@keyframes flip-reveal {
+  from {
+    transform: rotateY(-180deg);
+  }
+  to {
+    transform: rotateY(0deg);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* The speaking ring on the first speaker in Out loud mode, like a voice
+   channel's green outline around whoever is talking. */
+@keyframes speaking {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px #23a55a;
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgb(35 165 90 / 45%);
+  }
+}
+
+.animate-deal-in {
+  animation: deal-in 450ms cubic-bezier(0.2, 0.8, 0.3, 1.1) both;
+}
+
+.animate-toast-in {
+  animation: toast-in 220ms ease-out both;
+}
+
+.animate-speaking {
+  animation: speaking 1.6s ease-in-out infinite;
+}
+
+/* Flip cards: .card-flip > .card-flip-inner > (.card-face, .card-face-back).
+   The inner turns over once, after --flip-delay, then stays face up. */
+.card-flip {
+  perspective: 1400px;
+}
+
+.card-flip-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  animation: flip-reveal 700ms cubic-bezier(0.3, 0.7, 0.3, 1) both;
+  animation-delay: var(--flip-delay, 0ms);
+}
+
+.card-face,
+.card-face-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.card-face-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+/* The pattern on the back of every card. */
+.card-back-pattern {
+  background-color: #0b0b0c;
+  background-image:
+    repeating-linear-gradient(45deg, rgb(88 101 242 / 18%) 0 2px, transparent 2px 14px),
+    repeating-linear-gradient(-45deg, rgb(88 101 242 / 10%) 0 2px, transparent 2px 14px);
 }
 
 .animate-fade-in {
@@ -71,7 +165,11 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
   .animate-pop-in,
-  .animate-flash-highlight {
+  .animate-flash-highlight,
+  .animate-deal-in,
+  .animate-toast-in,
+  .animate-speaking,
+  .card-flip-inner {
     animation: none !important;
   }
 

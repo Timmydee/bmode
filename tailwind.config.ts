@@ -1,7 +1,12 @@
 import type { Config } from "tailwindcss";
 
-// Design tokens sourced from agents/design-system.html — do not hardcode
-// these hex values in components; reference the Tailwind color names below.
+// Design tokens: a Discord-style dark system on deep indigo (layered
+// surfaces, blurple accent, presence greens) with Cards Against Humanity-style
+// black question cards and white answer cards on top. Do not hardcode
+// these hex values in components; reference the Tailwind color names.
+//
+// The older token names (stage, paper, ink, spotlight…) are kept so every
+// screen picks up the new look; they now all resolve to the dark system.
 const config: Config = {
   content: [
     "./app/**/*.{ts,tsx}",
@@ -11,47 +16,55 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        stage: "#14121F",
-        "stage-2": "#1D1A2C",
-        "stage-line": "#332F47",
-        spotlight: "#F5B759",
-        "spotlight-ink": "#4A2E00",
-        // PRD §6 names this token "current" — renamed to "live" here
-        // because "current" is a Tailwind-reserved keyword (bg-current /
-        // text-current alias to CSS currentColor), which silently no-ops
-        // this exact violet instead of applying it. Same hex, same
-        // "live / changing right now" meaning from design-system.html.
-        live: "#7C6FF0",
-        "live-ink": "#EFECFF",
-        ember: "#E85D4C",
-        // v2 (Fastest Finger rounds): marks a correct answer on reveal.
-        // Deliberately not "live" (reserved for "changing right now", not
-        // a static correct-answer indicator) and not "spotlight" (already
-        // means primary CTA/brand accent). Green at a saturation/lightness
-        // consistent with the rest of the palette.
-        success: "#4CAF6D",
-        "success-ink": "#0B2A16",
-        paper: "#FBF7EF",
-        "paper-2": "#F2ECDD",
-        ink: "#1C1A24",
-        "ink-soft": "#5B5768",
-        "ink-faint": "#8B8697",
-        // Not in the PRD §6 token list, but used throughout the Stage
-        // mockups in design-system.html (.stage-brand, .stage-code,
-        // .stage-count) for muted text on dark surfaces — the Stage
-        // counterpart to ink-soft/ink-faint on Paper.
-        "stage-muted": "#B5AFD1",
-        // Also not in the §6 list: the hairline border/divider color used
-        // throughout Paper surfaces (inputs, cards, section rules).
-        hairline: "#DED6BE",
-        // Also not in the §6 list: readable secondary text on Stage (e.g.
-        // .stage-bar-label) — brighter/more prominent than stage-muted,
-        // used where a label needs to be legible, not just present.
-        "stage-text": "#E5E1F2",
+        // Surfaces, darkest to lightest: rail (inset fields, the area
+        // behind an invite), stage (the main background), stage-2 (raised
+        // panels and sidebars), and stage-hover for highlighted rows.
+        rail: "#0C0D1E",
+        stage: "#14152B",
+        "stage-2": "#1E2042",
+        "stage-hover": "#282B56",
+        "stage-line": "#2E3162",
+        floating: "#090A17",
+        // Secondary buttons.
+        "stage-button": "#33376E",
+        "stage-button-hover": "#40458A",
+        // Primary action and brand accent: Discord's blurple. The name
+        // "spotlight" is kept for the existing call sites.
+        spotlight: "#5865F2",
+        "spotlight-hover": "#4752C4",
+        "spotlight-ink": "#FFFFFF",
+        blurple: "#5865F2",
+        "blurple-soft": "#949CF7",
+        // "Live / changing right now" and presence. Renamed from the PRD's
+        // "current" because bg-current aliases to CSS currentColor.
+        live: "#23A55A",
+        "live-ink": "#FFFFFF",
+        ember: "#F23F43",
+        success: "#23A55A",
+        "success-ink": "#FFFFFF",
+        // Sparks (the group's reward currency) and hearts.
+        gold: "#F0B232",
+        fuchsia: "#EB459E",
+        // Paper used to be the light player surface; players now share the
+        // dark system, so these point at the same surfaces as stage.
+        paper: "#14152B",
+        "paper-2": "#1E2042",
+        ink: "#F3F4FB",
+        "ink-soft": "#B9BCDB",
+        "ink-faint": "#8E92BE",
+        hairline: "#2E3162",
+        "stage-muted": "#8E92BE",
+        "stage-text": "#DDDFF5",
+        // The cards themselves: black question cards, white answer cards.
+        "card-black": "#0B0B0C",
+        "card-white": "#FFFFFF",
+        "card-ink": "#0B0B0C",
+        "card-muted": "#6D6F78",
       },
       fontFamily: {
         display: ["var(--font-display)"],
         body: ["var(--font-body)"],
+        card: ["var(--font-card)"],
       },
     },
   },

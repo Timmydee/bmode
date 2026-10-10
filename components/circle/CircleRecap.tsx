@@ -1,5 +1,32 @@
 import type { CircleAward, CircleAwardVote, CircleRecap as Recap } from "@/lib/backend";
 import { bondLevel, circleAwardsEnabled, displayName } from "@/lib/game/circle";
+import { Avatar } from "./Cards";
+import Icon, { type IconName } from "@/components/shared/Icon";
+
+const BADGE_ICONS: Record<string, IconName> = {
+  icebreaker: "snowflake",
+  "full-circle": "ring",
+  "deep-divers": "waves",
+  "all-in": "users",
+  "big-hearts": "heart",
+  "night-owls": "moon",
+};
+
+// Gold, silver and bronze discs for the top three in Competitive style.
+const RANK_STYLES = ["bg-gold text-card-ink", "bg-[#C7CBE0] text-card-ink", "bg-[#C98A55] text-card-ink"];
+
+function RankBadge({ rank }: { rank: number }) {
+  return (
+    <span
+      aria-label={`Rank ${rank}`}
+      className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-display text-xs font-extrabold tabular-nums ${
+        RANK_STYLES[rank - 1] ?? "bg-stage-button text-white"
+      }`}
+    >
+      {rank}
+    </span>
+  );
+}
 
 export const CIRCLE_AWARDS: { award: CircleAward; label: string }[] = [
   { award: "best", label: "Best answer" },
@@ -13,9 +40,9 @@ interface CircleRecapProps {
   highlightParticipantId?: string;
 }
 
-// The end-of-game screen, shared by the host (Stage) and every phone
-// (Paper): the group's Sparks, the Bond they carry into the next game,
-// badges, and — only in Competitive style — a ranking.
+// The end-of-game screen, shared by the host's big screen and every phone:
+// the group's Sparks, the Bond they carry into the next game, badges, and
+// (only in Competitive style) a ranking. Sections are Discord-style embeds.
 export default function CircleRecap({
   recap,
   awardVotes,
@@ -24,7 +51,7 @@ export default function CircleRecap({
 }: CircleRecapProps) {
   const stage = variant === "stage";
   const muted = stage ? "text-stage-muted" : "text-ink-soft";
-  const card = stage ? "border-stage-line bg-stage-2" : "border-hairline bg-white";
+  const card = "border-transparent bg-stage-2";
   const before = bondLevel(recap.bondBefore);
   const after = bondLevel(recap.bondAfter);
   const leveledUp = before.name !== after.name;
@@ -35,7 +62,7 @@ export default function CircleRecap({
     : winners.length === 0 || winners.length === recap.players.length
       ? "It’s a tie!"
       : `${winners.map((p) => displayName(p.nickname)).join(" & ")} ${winners.length === 1 ? "wins" : "win"}${
-          winners[0].hearts ? ` with ${winners[0].hearts} 💛` : ""
+          winners[0].hearts ? ` with ${winners[0].hearts} ${winners[0].hearts === 1 ? "heart" : "hearts"}` : ""
         }`;
 
   return (
@@ -47,11 +74,11 @@ export default function CircleRecap({
         <h1 className={`font-display text-3xl font-bold ${stage ? "text-white" : "text-ink"}`}>
           That’s a wrap
         </h1>
-        <p className="mt-2 font-display text-2xl font-semibold text-spotlight">{headline}</p>
+        <p className="mt-2 font-display text-2xl font-extrabold text-gold">{headline}</p>
         {competitive && <p className={`text-sm ${muted}`}>Most hearts received wins. +{recap.pot} Sparks for your bond.</p>}
       </div>
 
-      <section className={`rounded-xl border p-4 ${card}`}>
+      <section className="rounded-md border-l-4 border-blurple bg-stage-2 p-4">
         <div className="mb-2 flex items-baseline justify-between">
           <span className={`text-sm ${muted}`}>Your bond</span>
           <span className={`font-display text-lg font-semibold ${stage ? "text-white" : "text-ink"}`}>
@@ -60,7 +87,7 @@ export default function CircleRecap({
         </div>
         <div className={`h-2.5 overflow-hidden rounded-full ${stage ? "bg-stage-line" : "bg-paper-2"}`}>
           <div
-            className="h-full rounded-full bg-spotlight transition-[width] duration-700"
+            className="h-full rounded-full bg-blurple transition-[width] duration-700"
             style={{ width: `${Math.round(after.progress * 100)}%` }}
           />
         </div>
@@ -78,9 +105,9 @@ export default function CircleRecap({
           <h2 className={`mb-2 text-sm font-medium ${muted}`}>Badges earned</h2>
           <ul className="grid grid-cols-2 gap-2">
             {recap.badges.map((badge) => (
-              <li key={badge.id} className={`rounded-xl border p-3 ${card}`}>
-                <span className="text-xl" aria-hidden>
-                  {badge.icon}
+              <li key={badge.id} className={`rounded-md border p-3 ${card}`}>
+                <span className="mb-1.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-blurple/20 text-blurple-soft">
+                  <Icon name={BADGE_ICONS[badge.id] ?? "sparkle"} className="h-4 w-4" />
                 </span>
                 <p className={`font-medium ${stage ? "text-white" : "text-ink"}`}>{badge.name}</p>
                 <p className={`text-xs ${muted}`}>{badge.detail}</p>
@@ -99,22 +126,29 @@ export default function CircleRecap({
             {recap.players.map((player) => (
               <li
                 key={player.participantId}
-                className={`flex items-center justify-between rounded-xl border px-4 py-2.5 ${card} ${
-                  player.participantId === highlightParticipantId ? "border-spotlight" : ""
+                className={`flex items-center justify-between rounded-md border px-3 py-2 ${
+                  player.participantId === highlightParticipantId ? "border-blurple bg-blurple/10" : card
                 }`}
               >
-                <span className={stage ? "text-stage-text" : "text-ink"}>
-                  {player.rank !== null && (
-                    <span className="mr-2 font-display font-semibold tabular-nums">
-                      {player.rank === 1 ? "🥇" : player.rank === 2 ? "🥈" : player.rank === 3 ? "🥉" : `${player.rank}.`}
-                    </span>
-                  )}
+                <span className={`flex items-center gap-2.5 ${stage ? "text-stage-text" : "text-ink"}`}>
+                  {player.rank !== null && <RankBadge rank={player.rank} />}
+                  <Avatar name={displayName(player.nickname)} size="sm" />
                   {displayName(player.nickname)}
                   {player.participantId === highlightParticipantId && " (you)"}
                 </span>
-                <span className={`font-display font-semibold tabular-nums ${stage ? "text-white" : "text-ink"}`}>
-                  {competitive && player.hearts !== undefined && `${player.hearts} 💛 · `}
-                  {player.sparks} ✨
+                <span
+                  className={`flex items-center gap-3 font-display font-semibold tabular-nums ${stage ? "text-white" : "text-ink"}`}
+                >
+                  {competitive && player.hearts !== undefined && (
+                    <span className="inline-flex items-center gap-1" aria-label={`${player.hearts} hearts`}>
+                      <Icon name="heart" filled className="h-4 w-4 text-fuchsia" />
+                      {player.hearts}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1" aria-label={`${player.sparks} Sparks`}>
+                    <Icon name="sparkle" className="h-4 w-4 text-gold" />
+                    {player.sparks}
+                  </span>
                 </span>
               </li>
             ))}
@@ -123,11 +157,9 @@ export default function CircleRecap({
       )}
 
       {recap.questionOfTheNight && (
-        <section className={`rounded-xl border p-4 ${card}`}>
-          <p className={`text-sm ${muted}`}>Question of the night</p>
-          <p className={`font-display text-lg font-semibold ${stage ? "text-white" : "text-ink"}`}>
-            {recap.questionOfTheNight}
-          </p>
+        <section className="flex flex-col gap-3 rounded-2xl bg-card-black p-6 text-white ring-1 ring-white/10">
+          <p className="text-xs font-bold tracking-wide text-white/60 uppercase">Question of the night</p>
+          <p className="font-card text-2xl leading-tight font-extrabold tracking-tight">{recap.questionOfTheNight}</p>
         </section>
       )}
 
@@ -163,7 +195,7 @@ function AwardResults({
         const top = Math.max(0, ...counts.values());
         const winners = [...counts.entries()].filter(([, count]) => count === top && top > 0);
         return (
-          <div key={award} className={`rounded-xl border p-3 ${card}`}>
+          <div key={award} className={`rounded-md border p-3 ${card}`}>
             <p className={`text-xs ${muted}`}>{label}</p>
             <p className={`font-medium ${stage ? "text-white" : "text-ink"}`}>
               {winners.length > 0

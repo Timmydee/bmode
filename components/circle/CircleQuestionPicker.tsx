@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { CircleDepth, CirclePlannedQuestion, CircleVibe } from "@/lib/backend";
 import { CIRCLE_QUESTIONS } from "@/lib/game/circle-questions";
 import { CIRCLE_DEPTH_LABELS, swapQuestion } from "@/lib/game/circle";
+import Icon from "@/components/shared/Icon";
 import {
   CIRCLE_CUSTOM_QUESTION_MAX_LENGTH,
   CIRCLE_MAX_QUESTIONS,
@@ -118,7 +119,7 @@ export default function CircleQuestionPicker({ vibe, questions, onChange, onSugg
                 </IconButton>
                 {question.source === "library" && (
                   <IconButton label="Swap for another question" onClick={() => swap(index)}>
-                    ⇄
+                    <Icon name="swap" className="h-4 w-4" />
                   </IconButton>
                 )}
                 <IconButton label="Remove" onClick={() => onChange(questions.filter((_, i) => i !== index))}>
@@ -287,7 +288,10 @@ function LibraryBrowser({
                   {CIRCLE_DEPTH_LABELS[q.depth]}
                 </span>
                 <span className="flex-1">{q.text}</span>
-                <span className="shrink-0 text-xs text-stage-muted">{isPicked ? "Added ✓" : "+ Add"}</span>
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs text-stage-muted">
+                  <Icon name={isPicked ? "check" : "plus"} className="h-3.5 w-3.5" />
+                  {isPicked ? "Added" : "Add"}
+                </span>
               </button>
             </li>
           );
@@ -306,7 +310,7 @@ function IconButton({
   label: string;
   disabled?: boolean;
   onClick: () => void;
-  children: string;
+  children: ReactNode;
 }) {
   return (
     <button
@@ -315,7 +319,7 @@ function IconButton({
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className="h-8 w-8 rounded-lg border border-stage-line text-stage-text disabled:opacity-30"
+      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-stage-line text-stage-text disabled:opacity-30"
     >
       {children}
     </button>

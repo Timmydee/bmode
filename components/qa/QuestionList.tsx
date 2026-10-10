@@ -141,7 +141,7 @@ export default function QuestionList({
           className={`flex items-start justify-between gap-4 rounded-xl border px-4 py-3 ${
             isStage
               ? "border-stage-line bg-stage-2"
-              : "border-hairline bg-white"
+              : "border-hairline bg-paper-2"
           } ${question.hidden ? "opacity-50" : ""}`}
         >
           <div className="flex-1">

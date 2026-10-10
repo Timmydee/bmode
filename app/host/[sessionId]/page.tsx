@@ -38,6 +38,7 @@ import QuestionList from "@/components/qa/QuestionList";
 import CountdownBadge from "@/components/round/CountdownBadge";
 import LeaderboardDisplay from "@/components/round/LeaderboardDisplay";
 import WinnersPodium from "@/components/round/WinnersPodium";
+import Icon from "@/components/shared/Icon";
 
 const REVEAL_PAUSE_MS = 4000;
 
@@ -571,7 +572,7 @@ export default function HostSessionPage(
   if (circleRunning && circleGame.state && hostPlays && hostPlayer.participant) {
     return (
       <div className="flex flex-1 flex-col bg-paper">
-        <div className="sticky top-0 z-40 flex flex-col gap-2 bg-stage px-4 py-3 text-white">
+        <div className="sticky top-0 z-40 flex flex-col gap-2 bg-rail px-4 py-3 text-white shadow-[0_1px_0_rgb(0_0_0/30%)]">
           <div className="flex items-center justify-between gap-3 text-xs text-stage-muted">
             <span>
               You’re hosting · code
@@ -651,7 +652,10 @@ export default function HostSessionPage(
         </>
       ) : round.justEndedRoundId && leaderboard ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6">
-          <h1 className="font-display text-3xl font-bold sm:text-4xl">🎉 Winners 🎉</h1>
+          <h1 className="inline-flex items-center gap-3 font-display text-3xl font-bold sm:text-4xl">
+            <Icon name="trophy" className="h-[0.9em] w-[0.9em] text-gold" />
+            Winners
+          </h1>
           <WinnersPodium leaderboard={leaderboard} variant="stage" />
         </div>
       ) : activeActivity?.kind === "poll" && isRoundQuestion && round.revealed && leaderboard ? (

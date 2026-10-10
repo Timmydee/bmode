@@ -1,4 +1,5 @@
 import type { PollResults } from "@/lib/backend";
+import Icon from "@/components/shared/Icon";
 
 interface PollResultsProps {
   results: PollResults;
@@ -39,9 +40,19 @@ export default function PollResults({
             >
               {/* Leading is otherwise color-only (violet vs. amber bar) —
                   a text cue keeps the signal legible without color. */}
-              {isLeading && correctOptionId === undefined && "★ "}
+              {isLeading && correctOptionId === undefined && (
+                <>
+                  <Icon name="star" filled className="mr-1.5 h-[0.9em] w-[0.9em] align-[-0.1em]" />
+                  <span className="sr-only">Leading: </span>
+                </>
+              )}
               {option.label}
-              {isCorrect && " ✓"}
+              {isCorrect && (
+                <>
+                  <Icon name="check" className="ml-1.5 h-[0.9em] w-[0.9em] align-[-0.1em]" />
+                  <span className="sr-only"> (correct)</span>
+                </>
+              )}
             </div>
             <div
               className={`flex-1 overflow-hidden rounded-lg border border-stage-line bg-stage-2 ${isLarge ? "h-6" : "h-3.5"}`}

@@ -32,9 +32,9 @@ describe("sparkFeedback", () => {
 
   it("rewards answering and hearts received", () => {
     const answered = state({ answers: [answer("me", "Me"), answer("ben", "Ben")] });
-    expect(sparkFeedback(state(), answered, "me")).toEqual(["+10 ✨ for answering"]);
+    expect(sparkFeedback(state(), answered, "me")).toEqual([{ sparks: 10, text: "for answering" }]);
     const hearted = { ...answered, hearts: [{ answerId: "a-me", participantId: "ben" }] };
-    expect(sparkFeedback(answered, hearted, "me")).toEqual(["+3 ✨ Ben loved your answer"]);
+    expect(sparkFeedback(answered, hearted, "me")).toEqual([{ sparks: 3, text: "Ben loved your answer" }]);
   });
 
   it("celebrates a Full Circle reveal and a unanimous go-deeper", () => {
@@ -42,9 +42,9 @@ describe("sparkFeedback", () => {
     const revealedQ = { ...question, phase: "revealed" as const, participantCount: 2 };
     const before = state({ answers });
     const revealed = state({ answers, question: revealedQ });
-    expect(sparkFeedback(before, revealed, "me")).toEqual(["+20 ✨ Full Circle: everyone answered"]);
+    expect(sparkFeedback(before, revealed, "me")).toEqual([{ sparks: 20, text: "Full Circle: everyone answered" }]);
     expect(sparkFeedback(revealed, { ...revealed, deeperVotes: ["me", "ben"] }, "me")).toEqual([
-      "+15 ✨ Everyone’s in. Going deeper next",
+      { sparks: 15, text: "Everyone’s in. Going deeper next" },
     ]);
   });
 });

@@ -158,12 +158,12 @@ function ControlButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-[10px] font-medium whitespace-nowrap outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+      className={`rounded-[4px] font-semibold whitespace-nowrap outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
         bar ? "px-3 py-1.5 text-sm" : "px-5 py-2.75"
       } ${
         variant === "primary"
-          ? "bg-spotlight text-spotlight-ink focus-visible:ring-2 focus-visible:ring-spotlight/60"
-          : "border-[1.5px] border-white/30 text-white focus-visible:ring-2 focus-visible:ring-white/60"
+          ? "bg-blurple text-white hover:bg-spotlight-hover focus-visible:ring-2 focus-visible:ring-blurple/60"
+          : "bg-stage-button text-white hover:bg-stage-button-hover focus-visible:ring-2 focus-visible:ring-white/60"
       }`}
     >
       {children}

@@ -20,6 +20,7 @@ import QuestionList from "@/components/qa/QuestionList";
 import CountdownBadge from "@/components/round/CountdownBadge";
 import LeaderboardDisplay from "@/components/round/LeaderboardDisplay";
 import WinnersPodium from "@/components/round/WinnersPodium";
+import Icon from "@/components/shared/Icon";
 
 // The projector-facing counterpart to app/host/[sessionId]/page.tsx — same
 // data, but display-only: no create/activate/moderate controls, so nothing
@@ -152,7 +153,10 @@ export default function HostPresentPage(
         />
       ) : round.justEndedRoundId && leaderboard ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6">
-          <h1 className="font-display text-4xl font-bold sm:text-5xl">🎉 Winners 🎉</h1>
+          <h1 className="inline-flex items-center gap-3 font-display text-4xl font-bold sm:text-5xl">
+            <Icon name="trophy" className="h-[0.9em] w-[0.9em] text-gold" />
+            Winners
+          </h1>
           <WinnersPodium leaderboard={leaderboard} variant="stage" />
         </div>
       ) : activeActivity?.kind === "poll" && isRoundQuestion && round.revealed && leaderboard ? (
