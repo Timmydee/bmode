@@ -69,7 +69,10 @@ export default function HostPage() {
         hostId: userId,
         title: trimmed,
       });
-      router.push(`/host/${session.id}`);
+      // A deck's "Play this deck" link on the landing page sends ?vibe=
+      // along so the new session opens on a Circle with that vibe.
+      const vibe = new URLSearchParams(window.location.search).get("vibe");
+      router.push(vibe ? `/host/${session.id}?vibe=${encodeURIComponent(vibe)}` : `/host/${session.id}`);
     } catch (error) {
       setCreateError(
         error instanceof Error

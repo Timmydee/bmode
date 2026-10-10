@@ -30,14 +30,16 @@ const DEFAULT_COUNT = 8;
 // the chosen vibe so a host can create a game in two taps, or curate it.
 export default function CreateCircleForm({
   sessionId,
+  initialVibe = "know",
   onCreated,
 }: {
   sessionId: string;
+  initialVibe?: CircleVibe;
   onCreated: () => void;
 }) {
   const [step, setStep] = useState<"setup" | "questions">("setup");
   const [name, setName] = useState("Circle");
-  const [vibe, setVibe] = useState<CircleVibe>("know");
+  const [vibe, setVibe] = useState<CircleVibe>(initialVibe);
   const [rewardStyle, setRewardStyle] = useState<CircleRewardStyle>("together");
   const [answerMode, setAnswerMode] = useState<CircleAnswerMode>("typed");
   const [questions, setQuestions] = useState<CirclePlannedQuestion[]>([]);
