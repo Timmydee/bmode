@@ -67,6 +67,14 @@ body {
   }
 }
 
+/* The top card of a deck is tossed aside to make way for the next. */
+@keyframes card-toss {
+  to {
+    opacity: 0;
+    transform: translate(55%, -10%) rotate(14deg);
+  }
+}
+
 /* A face-down card turns over: the inner element starts showing its back
    (rotated half a turn) and settles on its face. See .card-flip below. */
 @keyframes flip-reveal {
@@ -107,6 +115,10 @@ body {
 
 .animate-toast-in {
   animation: toast-in 220ms ease-out both;
+}
+
+.animate-card-toss {
+  animation: card-toss 450ms cubic-bezier(0.5, 0, 0.75, 0) both;
 }
 
 .animate-speaking {
@@ -171,6 +183,11 @@ body {
   .animate-speaking,
   .card-flip-inner {
     animation: none !important;
+  }
+
+  /* Without the toss, the old card would just sit on top of the new one. */
+  .animate-card-toss {
+    display: none;
   }
 
   /* Tailwind's transition-* utilities (bar growth, tap scale, row

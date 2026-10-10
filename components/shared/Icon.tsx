@@ -44,6 +44,17 @@ const PATHS = {
   ),
   moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />,
   star: <path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9Z" />,
+  smile: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" />
+    </>
+  ),
+  // A campfire flame, for the Tribe deck.
+  flame: (
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5Z" />
+  ),
+  "arrow-right": <path d="M5 12h14M12 5l7 7-7 7" />,
 } as const;
 
 export type IconName = keyof typeof PATHS;

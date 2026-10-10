@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { use, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { backend } from "@/lib/backend";
-import type { Activity, AudienceQuestion, Circle, Round, RoundQuestion, Survey } from "@/lib/backend";
+import type { Activity, AudienceQuestion, Circle, CircleVibe, Round, RoundQuestion, Survey } from "@/lib/backend";
 import { useSession } from "@/lib/hooks/useSession";
 import { useActiveActivity } from "@/lib/hooks/useActiveActivity";
 import { useLiveResults } from "@/lib/hooks/useLiveResults";
@@ -19,7 +19,7 @@ import CircleHostView from "@/components/circle/CircleHostView";
 import CircleHostControls from "@/components/circle/CircleHostControls";
 import CirclePlayerView from "@/components/circle/CirclePlayerView";
 import CreateCircleForm from "@/components/circle/CreateCircleForm";
-import { CIRCLE_DEPTH_LABELS } from "@/lib/game/circle";
+import { CIRCLE_DEPTH_LABELS, CIRCLE_VIBES } from "@/lib/game/circle";
 import {
   validateNickname,
   validateRoundDraft,
@@ -139,6 +139,7 @@ export default function HostSessionPage(
   props: PageProps<"/host/[sessionId]">,
 ) {
   const { sessionId } = use(props.params);
+  const startVibe = parseVibe(use(props.searchParams).vibe);
 
   // "Host and play": the host can join their own Circle as a player from
   // this page (same browser token as /join), with the host controls in a
@@ -804,7 +805,7 @@ export default function HostSessionPage(
           }
           onActivate={handleActivate}
         />
-        <CreateActivitySection sessionId={sessionId} onCreated={refreshActivities} />
+        <CreateActivitySection sessionId={sessionId} startVibe={startVibe} onCreated={refreshActivities} />
       </div>
 
       <div className="mt-10 flex items-center justify-between">
@@ -815,6 +816,10 @@ export default function HostSessionPage(
 }
 
 type HostMode = "play" | "watch";
+
+function parseVibe(value: string | string[] | undefined): CircleVibe | null {
+  return typeof value === "string" && Object.keys(CIRCLE_VIBES).includes(value) ? (value as CircleVibe) : null;
+}
 
 function hostModeKey(sessionId: string): string {
   return `bmode:host-mode:${sessionId}`;
@@ -1147,12 +1152,16 @@ const ACTIVITY_CREATION_KINDS: { kind: ActivityCreationKind; label: string }[] =
 // form instead of leftover state bleeding between types.
 function CreateActivitySection({
   sessionId,
+  startVibe,
   onCreated,
 }: {
   sessionId: string;
+  // Set when the host came from a deck on the landing page: open straight
+  // on a Circle with that deck's vibe.
+  startVibe: CircleVibe | null;
   onCreated: () => void;
 }) {
-  const [creatingKind, setCreatingKind] = useState<ActivityCreationKind | null>(null);
+  const [creatingKind, setCreatingKind] = useState<ActivityCreationKind | null>(startVibe ? "circle" : null);
 
   function handleCreated() {
     onCreated();
@@ -1173,7 +1182,7 @@ function CreateActivitySection({
         ))}
       </div>
       {creatingKind === "circle" && (
-        <CreateCircleForm sessionId={sessionId} onCreated={handleCreated} />
+        <CreateCircleForm sessionId={sessionId} initialVibe={startVibe ?? undefined} onCreated={handleCreated} />
       )}
       {creatingKind === "poll" && (
         <CreatePollForm sessionId={sessionId} onCreated={handleCreated} />
