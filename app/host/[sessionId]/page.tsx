@@ -30,7 +30,7 @@ import {
   type SurveyQuestionDraft,
 } from "@/lib/game/validation";
 import JoinCode from "@/components/shared/JoinCode";
-import QRCode from "@/components/shared/QRCode";
+import QRCodeButton from "@/components/shared/QRCodeButton";
 import ParticipantCount from "@/components/shared/ParticipantCount";
 import PollResults from "@/components/poll/PollResults";
 import WordCloudDisplay from "@/components/wordcloud/WordCloudDisplay";
@@ -616,6 +616,7 @@ export default function HostSessionPage(
             Code
             <JoinCode code={session.joinCode} className="ml-1.5 text-white" copyable />
           </span>
+          <QRCodeButton url={joinUrl} code={session.joinCode} />
           <Link
             href={`/host/${sessionId}/present`}
             target="_blank"
@@ -757,13 +758,10 @@ export default function HostSessionPage(
           </HostActionButton>
         </div>
       ) : (
-        <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6 text-center">
-          <h1 className="max-w-[16ch] font-display text-3xl font-bold sm:text-4xl">
-            {session.title}
-          </h1>
-          {joinUrl && <QRCode url={joinUrl} />}
+        <div className="flex flex-col gap-2">
+          <h1 className="font-display text-3xl font-bold sm:text-4xl">{session.title}</h1>
           <p className="text-stage-muted">
-            Activate an activity below once your audience has joined.
+            Pick an activity below once your audience has joined.
           </p>
         </div>
       )}
