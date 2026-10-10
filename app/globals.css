@@ -11,9 +11,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-display: var(--font-inter-tight);
+  --font-display: var(--font-bricolage-grotesque);
   --font-card: var(--font-inter-tight);
-  --font-body: var(--font-noto-sans);
+  --font-body: var(--font-figtree);
 }
 
 body {

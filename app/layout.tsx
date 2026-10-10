@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
-import { Inter_Tight, Noto_Sans } from "next/font/google";
+import { Bricolage_Grotesque, Figtree, Inter_Tight } from "next/font/google";
 import "./globals.css";
 
-// Noto Sans for reading (close to Discord's own UI type) and Inter Tight
-// at heavy weights for headings and the cards, in the spirit of the bold
-// Helvetica on a Cards Against Humanity card.
-const notoSans = Noto_Sans({
-  variable: "--font-noto-sans",
+// The Bmode brand pairing from the PRD: Bricolage Grotesque for headings
+// and Figtree for reading. The cards use Inter Tight at heavy weights, in
+// the spirit of the bold Helvetica on a Cards Against Humanity card.
+const bricolageGrotesque = Bricolage_Grotesque({
+  variable: "--font-bricolage-grotesque",
+  subsets: ["latin"],
+});
+
+const figtree = Figtree({
+  variable: "--font-figtree",
   subsets: ["latin"],
 });
 
@@ -25,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${notoSans.variable} ${interTight.variable} h-full antialiased`}
+      className={`${bricolageGrotesque.variable} ${figtree.variable} ${interTight.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-body">{children}</body>
     </html>
