@@ -5,6 +5,7 @@ import { backend } from "@/lib/backend";
 import type { PollActivity } from "@/lib/backend";
 import { validatePollOptionSelection } from "@/lib/game/validation";
 import CountdownBadge from "@/components/round/CountdownBadge";
+import Icon from "@/components/shared/Icon";
 
 interface PollVotingProps {
   activity: PollActivity;
@@ -171,7 +172,12 @@ function PollOptionButton({
       } ${dimmed && !correct && !wrong ? "opacity-50" : ""}`}
     >
       {label}
-      {correct && " ✓"}
+      {correct && (
+        <>
+          <Icon name="check" className="ml-1.5 h-[0.9em] w-[0.9em] align-[-0.1em]" />
+          <span className="sr-only"> (correct)</span>
+        </>
+      )}
     </button>
   );
 }

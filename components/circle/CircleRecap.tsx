@@ -1,6 +1,32 @@
 import type { CircleAward, CircleAwardVote, CircleRecap as Recap } from "@/lib/backend";
 import { bondLevel, circleAwardsEnabled, displayName } from "@/lib/game/circle";
 import { Avatar } from "./Cards";
+import Icon, { type IconName } from "@/components/shared/Icon";
+
+const BADGE_ICONS: Record<string, IconName> = {
+  icebreaker: "snowflake",
+  "full-circle": "ring",
+  "deep-divers": "waves",
+  "all-in": "users",
+  "big-hearts": "heart",
+  "night-owls": "moon",
+};
+
+// Gold, silver and bronze discs for the top three in Competitive style.
+const RANK_STYLES = ["bg-gold text-card-ink", "bg-[#C7CBE0] text-card-ink", "bg-[#C98A55] text-card-ink"];
+
+function RankBadge({ rank }: { rank: number }) {
+  return (
+    <span
+      aria-label={`Rank ${rank}`}
+      className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-display text-xs font-extrabold tabular-nums ${
+        RANK_STYLES[rank - 1] ?? "bg-stage-button text-white"
+      }`}
+    >
+      {rank}
+    </span>
+  );
+}
 
 export const CIRCLE_AWARDS: { award: CircleAward; label: string }[] = [
   { award: "best", label: "Best answer" },
@@ -36,7 +62,7 @@ export default function CircleRecap({
     : winners.length === 0 || winners.length === recap.players.length
       ? "It’s a tie!"
       : `${winners.map((p) => displayName(p.nickname)).join(" & ")} ${winners.length === 1 ? "wins" : "win"}${
-          winners[0].hearts ? ` with ${winners[0].hearts} 💛` : ""
+          winners[0].hearts ? ` with ${winners[0].hearts} ${winners[0].hearts === 1 ? "heart" : "hearts"}` : ""
         }`;
 
   return (
@@ -80,8 +106,8 @@ export default function CircleRecap({
           <ul className="grid grid-cols-2 gap-2">
             {recap.badges.map((badge) => (
               <li key={badge.id} className={`rounded-md border p-3 ${card}`}>
-                <span className="text-xl" aria-hidden>
-                  {badge.icon}
+                <span className="mb-1.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-blurple/20 text-blurple-soft">
+                  <Icon name={BADGE_ICONS[badge.id] ?? "sparkle"} className="h-4 w-4" />
                 </span>
                 <p className={`font-medium ${stage ? "text-white" : "text-ink"}`}>{badge.name}</p>
                 <p className={`text-xs ${muted}`}>{badge.detail}</p>
@@ -105,18 +131,24 @@ export default function CircleRecap({
                 }`}
               >
                 <span className={`flex items-center gap-2.5 ${stage ? "text-stage-text" : "text-ink"}`}>
-                  {player.rank !== null && (
-                    <span className="mr-2 font-display font-semibold tabular-nums">
-                      {player.rank === 1 ? "🥇" : player.rank === 2 ? "🥈" : player.rank === 3 ? "🥉" : `${player.rank}.`}
-                    </span>
-                  )}
+                  {player.rank !== null && <RankBadge rank={player.rank} />}
                   <Avatar name={displayName(player.nickname)} size="sm" />
                   {displayName(player.nickname)}
                   {player.participantId === highlightParticipantId && " (you)"}
                 </span>
-                <span className={`font-display font-semibold tabular-nums ${stage ? "text-white" : "text-ink"}`}>
-                  {competitive && player.hearts !== undefined && `${player.hearts} 💛 · `}
-                  {player.sparks} ✨
+                <span
+                  className={`flex items-center gap-3 font-display font-semibold tabular-nums ${stage ? "text-white" : "text-ink"}`}
+                >
+                  {competitive && player.hearts !== undefined && (
+                    <span className="inline-flex items-center gap-1" aria-label={`${player.hearts} hearts`}>
+                      <Icon name="heart" filled className="h-4 w-4 text-fuchsia" />
+                      {player.hearts}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1" aria-label={`${player.sparks} Sparks`}>
+                    <Icon name="sparkle" className="h-4 w-4 text-gold" />
+                    {player.sparks}
+                  </span>
                 </span>
               </li>
             ))}

@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
-// Design tokens: a Discord-style dark system (layered charcoal surfaces,
-// blurple accent, presence greens) with Cards Against Humanity-style
+// Design tokens: a Discord-style dark system on deep indigo (layered
+// surfaces, blurple accent, presence greens) with Cards Against Humanity-style
 // black question cards and white answer cards on top. Do not hardcode
 // these hex values in components; reference the Tailwind color names.
 //
@@ -16,18 +16,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Surfaces, darkest to lightest: rail (server list), stage-2
-        // (sidebars, raised panels), stage (the main chat area), and
-        // stage-hover for rows under the pointer.
-        rail: "#1E1F22",
-        stage: "#313338",
-        "stage-2": "#2B2D31",
-        "stage-hover": "#393C41",
-        "stage-line": "#3F4147",
-        floating: "#111214",
-        // Secondary buttons (Discord's grey button).
-        "stage-button": "#4E5058",
-        "stage-button-hover": "#6D6F78",
+        // Surfaces, darkest to lightest: rail (inset fields, the area
+        // behind an invite), stage (the main background), stage-2 (raised
+        // panels and sidebars), and stage-hover for highlighted rows.
+        rail: "#0C0D1E",
+        stage: "#14152B",
+        "stage-2": "#1E2042",
+        "stage-hover": "#282B56",
+        "stage-line": "#2E3162",
+        floating: "#090A17",
+        // Secondary buttons.
+        "stage-button": "#33376E",
+        "stage-button-hover": "#40458A",
         // Primary action and brand accent: Discord's blurple. The name
         // "spotlight" is kept for the existing call sites.
         spotlight: "#5865F2",
@@ -47,14 +47,14 @@ const config: Config = {
         fuchsia: "#EB459E",
         // Paper used to be the light player surface; players now share the
         // dark system, so these point at the same surfaces as stage.
-        paper: "#313338",
-        "paper-2": "#2B2D31",
-        ink: "#F2F3F5",
-        "ink-soft": "#B5BAC1",
-        "ink-faint": "#949BA4",
-        hairline: "#3F4147",
-        "stage-muted": "#949BA4",
-        "stage-text": "#DBDEE1",
+        paper: "#14152B",
+        "paper-2": "#1E2042",
+        ink: "#F3F4FB",
+        "ink-soft": "#B9BCDB",
+        "ink-faint": "#8E92BE",
+        hairline: "#2E3162",
+        "stage-muted": "#8E92BE",
+        "stage-text": "#DDDFF5",
         // The cards themselves: black question cards, white answer cards.
         "card-black": "#0B0B0C",
         "card-white": "#FFFFFF",

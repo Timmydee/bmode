@@ -2,9 +2,9 @@
 @import "tailwindcss";
 
 :root {
-  /* Discord-style dark surfaces; see tailwind.config.ts for the tokens. */
-  --background: #313338;
-  --foreground: #f2f3f5;
+  /* Deep indigo surfaces; see tailwind.config.ts for the tokens. */
+  --background: #14152b;
+  --foreground: #f3f4fb;
   color-scheme: dark;
 }
 

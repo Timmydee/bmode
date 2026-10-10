@@ -19,6 +19,7 @@ import QuestionComposer from "@/components/qa/QuestionComposer";
 import QuestionList from "@/components/qa/QuestionList";
 import LeaderboardDisplay from "@/components/round/LeaderboardDisplay";
 import WinnersPodium from "@/components/round/WinnersPodium";
+import Icon from "@/components/shared/Icon";
 
 export default function JoinCodePage(props: PageProps<"/join/[code]">) {
   const { code } = use(props.params);
@@ -170,7 +171,10 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
   if (round.justEndedRoundId && leaderboard) {
     return (
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 px-6 py-16">
-        <h1 className="font-display text-2xl font-bold text-ink">🎉 Winners 🎉</h1>
+        <h1 className="inline-flex items-center gap-3 font-display text-2xl font-bold text-ink">
+            <Icon name="trophy" className="h-[0.9em] w-[0.9em] text-gold" />
+            Winners
+          </h1>
         <WinnersPodium leaderboard={leaderboard} variant="paper" />
       </div>
     );

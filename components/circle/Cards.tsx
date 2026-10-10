@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { CircleDepth } from "@/lib/backend";
 import { CIRCLE_DEPTH_LABELS } from "@/lib/game/circle";
+import Icon, { type IconName } from "@/components/shared/Icon";
 
 // The pieces every Circle screen is built from: black question cards,
 // white answer cards, face-down card backs, avatars with presence, and
@@ -86,7 +87,7 @@ export function QuestionCard({
 }) {
   return (
     <div
-      className={`flex flex-col justify-between rounded-2xl bg-card-black text-white shadow-[0_12px_32px_rgb(0_0_0/45%)] ring-1 ring-white/10 ${
+      className={`flex flex-col justify-between rounded-2xl bg-card-black text-white shadow-[0_12px_32px_rgb(0_0_0/45%)] ring-1 ring-white/15 ${
         size === "lg" ? "min-h-64 gap-10 p-8 sm:p-10" : "min-h-44 gap-6 p-6"
       } ${className}`}
     >
@@ -212,17 +213,17 @@ export function FlipCard({ delayMs = 0, children }: { delayMs?: number; children
   );
 }
 
-// A Discord-style reaction: emoji and count in a pill, outlined in blurple
-// once you've reacted.
+// A Discord-style reaction: an icon and a count in a pill, outlined and
+// filled in once you've reacted.
 export function ReactionPill({
-  emoji,
+  icon = "heart",
   count,
   active = false,
   onClick,
   label,
   tone = "light",
 }: {
-  emoji: string;
+  icon?: IconName;
   count: number;
   active?: boolean;
   onClick?: () => void;
@@ -230,16 +231,16 @@ export function ReactionPill({
   // "light" sits on a white card, "dark" on the dark surfaces.
   tone?: "light" | "dark";
 }) {
-  const base = `inline-flex items-center gap-1.5 rounded-lg border px-2 py-0.5 text-sm font-semibold tabular-nums`;
+  const base = "inline-flex items-center gap-1.5 rounded-lg border px-2 py-0.5 text-sm font-semibold tabular-nums";
   const colors = active
-    ? "border-blurple bg-blurple/15 text-blurple"
+    ? "border-fuchsia bg-fuchsia/15 text-fuchsia"
     : tone === "light"
       ? "border-transparent bg-black/[0.06] text-card-muted"
       : "border-transparent bg-stage-2 text-ink-soft";
   if (!onClick) {
     return (
       <span className={`${base} ${colors}`} aria-label={`${count} ${label}`}>
-        <span aria-hidden>{emoji}</span>
+        <Icon name={icon} filled className="h-4 w-4 text-fuchsia" />
         {count}
       </span>
     );
@@ -250,10 +251,10 @@ export function ReactionPill({
       aria-pressed={active}
       aria-label={label}
       onClick={onClick}
-      className={`${base} ${colors} transition-transform hover:border-blurple/60 active:scale-90`}
+      className={`${base} ${colors} transition-transform hover:border-fuchsia/60 active:scale-90`}
     >
-      <span aria-hidden>{emoji}</span>
-      {count > 0 ? count : "+"}
+      <Icon name={icon} filled={active} className="h-4 w-4" />
+      {count > 0 ? count : <Icon name="plus" className="h-3 w-3" />}
     </button>
   );
 }
@@ -296,7 +297,7 @@ export function SparksPill({ value, label = "Sparks" }: { value: number; label?:
       className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-2.5 py-1 font-display text-sm font-bold tabular-nums text-gold"
       title={label}
     >
-      <span aria-hidden>✨</span>
+      <Icon name="sparkle" className="h-4 w-4" />
       {value}
       <span className="sr-only">{label}</span>
     </span>

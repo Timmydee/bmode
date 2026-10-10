@@ -9,10 +9,11 @@ import {
   toggleDeeperVote,
   voteCircleAward,
 } from "@/lib/circle/actions";
-import { sparkFeedback } from "@/lib/circle/feedback";
+import { sparkFeedback, type SparkMessage } from "@/lib/circle/feedback";
 import { circleAwardsEnabled, displayName, speakingOrder } from "@/lib/game/circle";
 import { CIRCLE_ANSWER_MAX_LENGTH, validateCircleAnswer } from "@/lib/game/validation";
 import CircleRecap, { CIRCLE_AWARDS } from "./CircleRecap";
+import Icon from "@/components/shared/Icon";
 import {
   AnswerCard,
   Avatar,
@@ -84,7 +85,8 @@ export default function CirclePlayerView({ sessionId, participantId, state }: Ci
               className="inline-flex items-center gap-1 rounded-full bg-fuchsia/15 px-2.5 py-1 font-display text-sm font-bold tabular-nums text-fuchsia"
               title="Hearts you’ve received"
             >
-              {myHearts} 💛
+              <Icon name="heart" filled className="h-4 w-4" />
+              {myHearts}
               <span className="sr-only">hearts, {mySparks} Sparks</span>
             </span>
           ) : (
@@ -110,9 +112,8 @@ export default function CirclePlayerView({ sessionId, participantId, state }: Ci
   );
 }
 
-interface Toast {
+interface Toast extends SparkMessage {
   id: number;
-  text: string;
 }
 
 // Turns each new reward (see lib/circle/feedback.ts) into a short-lived
@@ -130,7 +131,7 @@ function useSparkToasts(state: CircleState, participantId: string): Toast[] {
     if (messages.length > 0) {
       setToasts((current) => {
         let id = current.at(-1)?.id ?? 0;
-        return [...current, ...messages.map((text) => ({ id: ++id, text }))];
+        return [...current, ...messages.map((message) => ({ id: ++id, ...message }))];
       });
     }
   }
@@ -153,8 +154,12 @@ function SparkToasts({ toasts }: { toasts: Toast[] }) {
       {toasts.slice(0, 2).map((toast) => (
         <p
           key={toast.id}
-          className="animate-toast-in rounded-lg border-l-4 border-gold bg-floating px-4 py-2.5 text-sm font-semibold text-ink shadow-[0_8px_24px_rgb(0_0_0/50%)]"
+          className="flex animate-toast-in items-center gap-2 rounded-lg border-l-4 border-gold bg-floating px-4 py-2.5 text-sm font-semibold text-ink shadow-[0_8px_24px_rgb(0_0_0/50%)]"
         >
+          <span className="inline-flex items-center gap-1 font-display font-bold text-gold tabular-nums">
+            <Icon name="sparkle" className="h-4 w-4" />+{toast.sparks}
+            <span className="sr-only">Sparks</span>
+          </span>
           {toast.text}
         </p>
       ))}
@@ -330,7 +335,7 @@ function Revealed({ sessionId, participantId, state }: CirclePlayerViewProps) {
         <>
           <section className="flex flex-col gap-2">
             <h2 className="flex items-center gap-2 px-1 text-xs font-bold tracking-wide text-ink-faint uppercase">
-              <span aria-hidden>🔊</span> Speaking order
+              <Icon name="volume" className="h-4 w-4" /> Speaking order
             </h2>
             <ol className="flex flex-col gap-1">
               {speakingOrder(answers, question.spotlightParticipantId).map((answer, index) => (
@@ -417,7 +422,13 @@ function Revealed({ sessionId, participantId, state }: CirclePlayerViewProps) {
               votedDeeper ? "bg-live text-live-ink" : "bg-stage-button text-white hover:bg-stage-button-hover"
             }`}
           >
-            {votedDeeper ? "You’re in ✓" : "I’m in"}
+            {votedDeeper ? (
+              <span className="inline-flex items-center gap-1.5">
+                You’re in <Icon name="check" className="h-4 w-4" />
+              </span>
+            ) : (
+              "I’m in"
+            )}
           </button>
         </div>
       )}
@@ -475,14 +486,13 @@ function PlayedCard({
         >
           {canHeart ? (
             <ReactionPill
-              emoji={hearted ? "💛" : "🤍"}
               count={hearts}
               active={hearted}
               label={hearted ? "Remove heart" : "Heart this answer"}
               onClick={() => onToggleHeart(!hearted)}
             />
           ) : (
-            hearts > 0 && <ReactionPill emoji="💛" count={hearts} label="hearts" />
+            hearts > 0 && <ReactionPill count={hearts} label="hearts" />
           )}
         </AnswerCard>
       </FlipCard>
@@ -521,17 +531,18 @@ function SpeakerCard({
         </span>
       </p>
       {isMine ? (
-        hearts > 0 && <ReactionPill emoji="💛" count={hearts} label="hearts" tone="dark" />
+        hearts > 0 && <ReactionPill count={hearts} label="hearts" tone="dark" />
       ) : (
         <button
           type="button"
           aria-pressed={hearted}
           onClick={() => onToggleHeart(!hearted)}
-          className={`shrink-0 rounded-lg border px-2.5 py-1 text-sm font-semibold transition-transform active:scale-90 ${
-            hearted ? "border-blurple bg-blurple/15 text-blurple-soft" : "border-transparent bg-stage text-ink-soft"
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-sm font-semibold transition-transform active:scale-90 ${
+            hearted ? "border-fuchsia bg-fuchsia/15 text-fuchsia" : "border-transparent bg-stage text-ink-soft"
           }`}
         >
-          {hearted ? "💛 Loved it" : "🤍 Loved what they said"}
+          <Icon name="heart" filled={hearted} className="h-4 w-4" />
+          {hearted ? "Loved it" : "Loved what they said"}
         </button>
       )}
     </li>

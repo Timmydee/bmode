@@ -8,7 +8,8 @@ interface WinnersPodiumProps {
   variant?: "stage" | "paper";
 }
 
-const MEDALS = ["🥇", "🥈", "🥉"];
+// Gold, silver and bronze discs, numbered.
+const MEDALS = ["bg-gold", "bg-[#C7CBE0]", "bg-[#C98A55]"];
 // Reveal order is 3rd, then 2nd, then 1st (built-up suspense) — reverse
 // of display order (1st, 2nd, 3rd). Index into `top3`.
 const REVEAL_ORDER = [2, 1, 0];
@@ -67,8 +68,13 @@ export default function WinnersPodium({ leaderboard, variant = "stage" }: Winner
                   : "border-hairline bg-paper-2"
             }`}
           >
-            <span className={`text-3xl ${isWinner && isVisible ? "animate-pop-in" : ""}`}>
-              {MEDALS[index]}
+            <span
+              aria-label={`Place ${index + 1}`}
+              className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-display text-lg font-extrabold text-card-ink ${MEDALS[index]} ${
+                isWinner && isVisible ? "animate-pop-in" : ""
+              }`}
+            >
+              {index + 1}
             </span>
             <span
               className={`flex-1 font-display font-semibold ${isWinner ? "text-xl" : "text-lg"} ${isStage ? "text-white" : "text-ink"}`}

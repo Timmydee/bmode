@@ -5,6 +5,7 @@ import type { CircleState } from "@/lib/hooks/useCircle";
 import { displayName, speakingOrder } from "@/lib/game/circle";
 import CircleHostControls from "./CircleHostControls";
 import CircleRecap from "./CircleRecap";
+import Icon from "@/components/shared/Icon";
 import {
   AnswerCard,
   Avatar,
@@ -137,7 +138,7 @@ export default function CircleHostView({
               <QuestionCard text={question.text} depth={question.depth} className="w-full max-w-xl" />
               <section className="w-full max-w-md">
                 <h3 className="mb-2 flex items-center gap-2 px-2 text-xs font-bold tracking-wide text-stage-muted uppercase">
-                  <span aria-hidden>🔊</span> Speaking order
+                  <Icon name="volume" className="h-4 w-4" /> Speaking order
                 </h3>
                 <ol className="flex flex-col gap-1">
                   {speakingOrder(answers, question.spotlightParticipantId).map((answer, index) => (
@@ -156,7 +157,7 @@ export default function CircleHostView({
                         {displayName(answer.nickname)}
                       </span>
                       {heartCount(answer.id) > 0 && (
-                        <ReactionPill emoji="💛" count={heartCount(answer.id)} label="hearts" tone="dark" />
+                        <ReactionPill count={heartCount(answer.id)} label="hearts" tone="dark" />
                       )}
                     </li>
                   ))}
@@ -184,7 +185,7 @@ export default function CircleHostView({
                         size="lg"
                       >
                         {heartCount(answer.id) > 0 && (
-                          <ReactionPill emoji="💛" count={heartCount(answer.id)} label="hearts" />
+                          <ReactionPill count={heartCount(answer.id)} label="hearts" />
                         )}
                       </AnswerCard>
                     </FlipCard>
@@ -266,14 +267,19 @@ function MemberList({
                 <span className="block truncate text-sm font-semibold text-stage-text">
                   {displayName(answer.nickname)}
                 </span>
-                <span className="block truncate text-xs text-stage-muted">
-                  {answer.skipped
-                    ? "Passed"
-                    : answering
-                      ? "Played a card"
-                      : heartCount(answer.id) > 0
-                        ? `💛 ${heartCount(answer.id)}`
-                        : "Card revealed"}
+                <span className="flex items-center gap-1 truncate text-xs text-stage-muted">
+                  {answer.skipped ? (
+                    "Passed"
+                  ) : answering ? (
+                    "Played a card"
+                  ) : heartCount(answer.id) > 0 ? (
+                    <>
+                      <Icon name="heart" filled className="h-3 w-3 text-fuchsia" />
+                      {heartCount(answer.id)} {heartCount(answer.id) === 1 ? "heart" : "hearts"}
+                    </>
+                  ) : (
+                    "Card revealed"
+                  )}
                 </span>
               </span>
             </li>
