@@ -241,6 +241,11 @@ export interface CircleRepository {
   }): Promise<void>;
 }
 
+export interface PresenceOptions {
+  onCount?: (count: number) => void;
+  publishCount?: boolean; // defaults to true for "host:" keys
+}
+
 export interface RealtimeClient {
   /** Subscribe to everything happening in one session. */
   subscribe(
@@ -249,8 +254,17 @@ export interface RealtimeClient {
   ): Unsubscribe;
   /** Host-side broadcast (activity activated, session ended, etc.). */
   publish(sessionId: string, event: SessionEvent): Promise<void>;
-  /** Presence — live participant count without polling the DB. */
-  trackPresence(sessionId: string, participantId: string): Unsubscribe;
+  /**
+   * Presence — live participant count without polling the DB. `onCount`
+   * receives this client's own view of who is here now on every presence
+   * change. `publishCount` makes this client the one that broadcasts that
+   * count to everyone else (the host does this; see realtime.ts).
+   */
+  trackPresence(
+    sessionId: string,
+    participantId: string,
+    options?: PresenceOptions,
+  ): Unsubscribe;
 }
 
 export interface AuthClient {

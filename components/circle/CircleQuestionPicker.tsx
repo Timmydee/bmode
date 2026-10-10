@@ -237,6 +237,7 @@ function LibraryBrowser({
   const shown = CIRCLE_QUESTIONS.filter(
     (q) =>
       (vibe === "reconnect" || !q.reconnect) &&
+      (vibe === "couples" || !q.couples) &&
       (depth === "all" || q.depth === depth) &&
       (!term || q.text.toLowerCase().includes(term)),
   );

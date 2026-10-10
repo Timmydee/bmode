@@ -14,6 +14,7 @@ import {
   nextDepth,
   pickNextQuestion,
   scoreCircleQuestion,
+  suggestQuestionSet,
   type CircleQuestionTally,
 } from "@/lib/game/circle";
 
@@ -88,7 +89,7 @@ export async function revealCircleQuestion(input: {
   await publishUpdated(input.sessionId, input.circle.id);
 }
 
-function tallyFor(
+export function tallyFor(
   question: CircleQuestion,
   answers: CircleAnswer[],
   hearts: CircleHeart[],
@@ -99,7 +100,10 @@ function tallyFor(
   return {
     text: question.text,
     depth: question.depth,
-    participantCount: question.participantCount ?? own.length,
+    // Still answering: nobody knows who "everyone" is until the reveal, so
+    // no Full Circle bonus yet.
+    participantCount:
+      question.participantCount ?? (question.phase === "answering" ? Number.MAX_SAFE_INTEGER : own.length),
     wentDeeper,
     answers: own.map((a) => ({ id: a.id, participantId: a.participantId, skipped: a.skipped })),
     hearts: hearts.filter((h) => ownIds.has(h.answerId)),
@@ -149,10 +153,16 @@ export async function endCircle(input: {
   circle: Circle;
 }): Promise<void> {
   const { circle } = input;
-  const questions = (await backend.circles.listQuestions(circle.id)).filter(
-    (q) => q.phase !== "answering",
+  // A question still being answered when the host ends early counts if
+  // anyone answered it, so nobody's last answer silently disappears.
+  const allQuestions = await backend.circles.listQuestions(circle.id);
+  const allAnswers = await backend.circles.listAnswers(allQuestions.map((q) => q.id));
+  const questions = allQuestions.filter(
+    (q) =>
+      q.phase !== "answering" ||
+      allAnswers.some((a) => a.circleQuestionId === q.id && !a.skipped),
   );
-  const answers = await backend.circles.listAnswers(questions.map((q) => q.id));
+  const answers = allAnswers.filter((a) => questions.some((q) => q.id === a.circleQuestionId));
   const hearts = await backend.circles.listHearts(answers.map((a) => a.id));
   const participants = await backend.participants.listBySession(input.sessionId);
 
@@ -185,6 +195,28 @@ export async function endCircle(input: {
 export async function closeCircle(sessionId: string, circleId: string): Promise<void> {
   await backend.circles.updateCircle(circleId, { status: "ended" });
   await publishUpdated(sessionId, circleId);
+}
+
+// One tap from the recap to a new game with the same people and settings:
+// a fresh set of questions (leaving out everything already played in this
+// session), started straight away. The Bond carries over on its own
+// because the group is the same.
+export async function playCircleAgain(sessionId: string, circle: Circle): Promise<void> {
+  const circles = await backend.circles.listBySession(sessionId);
+  const played = (await Promise.all(circles.map((c) => backend.circles.listQuestions(c.id)))).flat();
+  const questions = suggestQuestionSet({
+    vibe: circle.settings.vibe,
+    count: circle.settings.questionCount,
+    random: Math.random,
+    avoidTexts: played.map((q) => q.text),
+  });
+  const next = await backend.circles.create({
+    sessionId,
+    name: circle.name,
+    settings: { ...circle.settings, questionCount: questions.length, questions, customQuestions: [] },
+  });
+  await backend.circles.updateCircle(circle.id, { status: "ended" });
+  await startCircle(sessionId, next);
 }
 
 /* ---------- Participant side ---------- */

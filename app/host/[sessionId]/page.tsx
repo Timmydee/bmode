@@ -12,11 +12,16 @@ import { useCountdown } from "@/lib/hooks/useCountdown";
 import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
 import { useSurvey } from "@/lib/hooks/useSurvey";
 import { useCircle } from "@/lib/hooks/useCircle";
+import { useCircleAutoReveal } from "@/lib/hooks/useCircleAutoReveal";
+import { useParticipant } from "@/lib/hooks/useParticipant";
 import { startCircle } from "@/lib/circle/actions";
 import CircleHostView from "@/components/circle/CircleHostView";
+import CircleHostControls from "@/components/circle/CircleHostControls";
+import CirclePlayerView from "@/components/circle/CirclePlayerView";
 import CreateCircleForm from "@/components/circle/CreateCircleForm";
 import { CIRCLE_DEPTH_LABELS } from "@/lib/game/circle";
 import {
+  validateNickname,
   validateRoundDraft,
   validateRoundQuestionDraft,
   validateSurveyDraft,
@@ -133,9 +138,22 @@ export default function HostSessionPage(
   props: PageProps<"/host/[sessionId]">,
 ) {
   const { sessionId } = use(props.params);
+
+  // "Host and play": the host can join their own Circle as a player from
+  // this page (same browser token as /join), with the host controls in a
+  // bar on top of their player screen. "watch" keeps the big-screen view.
+  const hostPlayer = useParticipant(sessionId);
+  const [hostMode, setHostModeState] = useState<HostMode | null>(() => readHostMode(sessionId));
+  function setHostMode(mode: HostMode | null) {
+    setHostModeState(mode);
+    writeHostMode(sessionId, mode);
+  }
+  const hostPlays = hostMode !== "watch" && Boolean(hostPlayer.participant);
+
   const { session, participantCount, loading } = useSession(
     sessionId,
-    `host:${sessionId}`,
+    hostPlays && hostPlayer.participant ? hostPlayer.participant.id : `host:${sessionId}`,
+    { publishCount: true },
   );
 
   const [viewerId, setViewerId] = useState<string | null | undefined>(
@@ -178,7 +196,10 @@ export default function HostSessionPage(
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [circles, setCircles] = useState<Circle[]>([]);
   const circleGame = useCircle(sessionId);
-  const circleRunning = Boolean(circleGame.state);
+  // A closed Circle stays in circleGame.state so players keep their recap,
+  // but for the host it's over: the session goes back to the control room.
+  const circleRunning = Boolean(circleGame.state && circleGame.state.circle.status !== "ended");
+  const autoRevealError = useCircleAutoReveal(sessionId, circleGame.state, participantCount);
   const [refreshKey, setRefreshKey] = useState(0);
   useEffect(() => {
     if (!sessionId) return;
@@ -547,39 +568,87 @@ export default function HostSessionPage(
       ? `${window.location.origin}/join/${session.joinCode}`
       : "";
 
+  if (circleRunning && circleGame.state && hostPlays && hostPlayer.participant) {
+    return (
+      <div className="flex flex-1 flex-col bg-paper">
+        <div className="sticky top-0 z-40 flex flex-col gap-2 bg-stage px-4 py-3 text-white">
+          <div className="flex items-center justify-between gap-3 text-xs text-stage-muted">
+            <span>
+              You’re hosting · code
+              <JoinCode code={session.joinCode} className="ml-1.5 text-white" />
+            </span>
+            <button type="button" onClick={() => setHostMode("watch")} className="underline">
+              Big screen view
+            </button>
+          </div>
+          <CircleHostControls
+            sessionId={sessionId}
+            hostId={session.hostId}
+            state={circleGame.state}
+            participantCount={participantCount}
+            onChanged={() => {
+              circleGame.refresh();
+              refreshActivities();
+            }}
+            variant="bar"
+          />
+          {autoRevealError && <p className="text-sm text-ember">{autoRevealError}</p>}
+        </div>
+        <CirclePlayerView
+          sessionId={sessionId}
+          participantId={hostPlayer.participant.id}
+          state={circleGame.state}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-1 flex-col bg-stage px-8 py-10 text-white sm:px-12 sm:py-14">
-      <div className="mb-10 flex items-center justify-between">
+    <div className="flex flex-1 flex-col bg-stage px-5 py-8 text-white sm:px-12 sm:py-14">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 sm:mb-10">
         <span className="font-display text-[15px] font-bold tracking-[0.01em] text-stage-muted">
           Bmode
         </span>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-stage-muted">
-            Join at {typeof window !== "undefined" ? window.location.host : ""}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span className="text-sm whitespace-nowrap text-stage-muted">
+            Code
             <JoinCode code={session.joinCode} className="ml-1.5 text-white" copyable />
           </span>
           <Link
             href={`/host/${sessionId}/present`}
             target="_blank"
-            className="rounded-[10px] border-[1.5px] border-white/30 px-3 py-1.5 text-sm font-medium text-white"
+            className="rounded-[10px] border-[1.5px] border-white/30 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-white"
           >
-            Open projector view
+            Big screen
           </Link>
         </div>
       </div>
 
-      {circleGame.state ? (
-        <CircleHostView
-          sessionId={sessionId}
-          hostId={session.hostId}
-          joinCode={session.joinCode}
-          state={circleGame.state}
-          participantCount={participantCount}
-          onChanged={() => {
-            circleGame.refresh();
-            refreshActivities();
+      {circleRunning && circleGame.state && !hostPlayer.loading && !hostPlayer.participant && hostMode === null ? (
+        <HostPlayPrompt
+          circleName={circleGame.state.circle.name}
+          onPlay={async (nickname) => {
+            await hostPlayer.join(nickname);
+            setHostMode("play");
           }}
+          onWatch={() => setHostMode("watch")}
         />
+      ) : circleRunning && circleGame.state ? (
+        <>
+          <CircleHostView
+            sessionId={sessionId}
+            hostId={session.hostId}
+            joinCode={session.joinCode}
+            state={circleGame.state}
+            participantCount={participantCount}
+            onChanged={() => {
+              circleGame.refresh();
+              refreshActivities();
+            }}
+            onPlay={() => setHostMode(hostPlayer.participant ? "play" : null)}
+          />
+          {autoRevealError && <p className="text-center text-sm text-ember">{autoRevealError}</p>}
+        </>
       ) : round.justEndedRoundId && leaderboard ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 py-6">
           <h1 className="font-display text-3xl font-bold sm:text-4xl">🎉 Winners 🎉</h1>
@@ -694,7 +763,8 @@ export default function HostSessionPage(
         </div>
       )}
 
-      <div className="mt-10 border-t border-stage-line pt-8">
+      {/* The other tools stay out of the way while a Circle is on. */}
+      <div className={`mt-10 border-t border-stage-line pt-8 ${circleRunning ? "hidden" : ""}`}>
         {actionError && (
           <p className="mb-4 text-sm text-ember">{actionError}</p>
         )}
@@ -737,6 +807,106 @@ export default function HostSessionPage(
         <ParticipantCount count={participantCount} variant="stage" />
       </div>
     </div>
+  );
+}
+
+type HostMode = "play" | "watch";
+
+function hostModeKey(sessionId: string): string {
+  return `bmode:host-mode:${sessionId}`;
+}
+
+// Remembered per browser so a refresh doesn't ask again. Storage can be
+// unavailable (private mode, blocked site data); asking again is fine then.
+function readHostMode(sessionId: string): HostMode | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = window.localStorage.getItem(hostModeKey(sessionId));
+    return stored === "play" || stored === "watch" ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeHostMode(sessionId: string, mode: HostMode | null): void {
+  try {
+    if (mode) window.localStorage.setItem(hostModeKey(sessionId), mode);
+    else window.localStorage.removeItem(hostModeKey(sessionId));
+  } catch {
+    // Not remembered; the host is just asked again after a refresh.
+  }
+}
+
+// Shown once when a Circle starts: most hosts of a friends' or couples'
+// game are also playing, so that's the main path, with the big-screen
+// view one tap away.
+function HostPlayPrompt({
+  circleName,
+  onPlay,
+  onWatch,
+}: {
+  circleName: string;
+  onPlay: (nickname: string | null) => Promise<void>;
+  onWatch: () => void;
+}) {
+  const [nickname, setNickname] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    const trimmed = nickname.trim();
+    if (trimmed) {
+      const result = validateNickname(trimmed);
+      if (!result.valid) {
+        setError(result.error ?? "That name isn't allowed.");
+        return;
+      }
+    }
+    setJoining(true);
+    setError(null);
+    try {
+      await onPlay(trimmed || null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not join the game.");
+      setJoining(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 py-6"
+    >
+      <p className="text-sm text-stage-muted">{circleName} has started</p>
+      <h1 className="font-display text-3xl font-bold">Are you playing too?</h1>
+      <p className="text-stage-muted">
+        Play from this phone and you’ll get the host controls in a bar at the top.
+      </p>
+      <input
+        value={nickname}
+        onChange={(event) => setNickname(event.target.value)}
+        placeholder="Your name"
+        maxLength={24}
+        autoFocus
+        className="rounded-[10px] border-[1.5px] border-stage-line bg-stage-2 px-4 py-3 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
+      />
+      {error && <p className="text-sm text-ember">{error}</p>}
+      <button
+        type="submit"
+        disabled={joining}
+        className="rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink disabled:opacity-60"
+      >
+        {joining ? "Joining…" : "Play and host"}
+      </button>
+      <button
+        type="button"
+        onClick={onWatch}
+        className="rounded-[10px] border-[1.5px] border-white/30 px-5 py-2.75 font-medium text-white"
+      >
+        Just host (show the big screen)
+      </button>
+    </form>
   );
 }
 
@@ -986,7 +1156,7 @@ function CreateActivitySection({
   }
 
   return (
-    <div className="mt-8 flex flex-col gap-4 border-t border-stage-line pt-8">
+    <div className="mt-8 flex flex-col gap-4 border-t border-stage-line pt-8 first:mt-0 first:border-t-0 first:pt-0">
       <p className="text-sm font-medium text-stage-muted">Add an activity</p>
       <div className="flex flex-wrap gap-2">
         {ACTIVITY_CREATION_KINDS.map(({ kind, label }) => (

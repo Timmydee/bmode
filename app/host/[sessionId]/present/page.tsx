@@ -130,7 +130,7 @@ export default function HostPresentPage(
         </span>
         <div className="flex items-center gap-3">
           <span className="text-sm text-stage-muted">
-            Join at {typeof window !== "undefined" ? window.location.host : ""}
+            Join at {typeof window !== "undefined" ? `${window.location.host}/join` : ""} with code
             <JoinCode code={session.joinCode} className="ml-1.5 text-white" />
           </span>
           {/* Persistent corner QR for latecomers during a live activity —
@@ -140,7 +140,8 @@ export default function HostPresentPage(
         </div>
       </div>
 
-      {circleGame.state ? (
+      {circleGame.state &&
+      (circleGame.state.circle.status !== "ended" || (!activeActivity && !round.justEndedRoundId)) ? (
         <CircleHostView
           sessionId={sessionId}
           hostId={session.hostId}

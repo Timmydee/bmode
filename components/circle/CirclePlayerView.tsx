@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import type { CircleAnswer } from "@/lib/backend";
 import type { CircleState } from "@/lib/hooks/useCircle";
 import {
@@ -9,7 +9,8 @@ import {
   toggleDeeperVote,
   voteCircleAward,
 } from "@/lib/circle/actions";
-import { CIRCLE_DEPTH_LABELS, displayName } from "@/lib/game/circle";
+import { sparkFeedback } from "@/lib/circle/feedback";
+import { CIRCLE_DEPTH_LABELS, circleAwardsEnabled, displayName, speakingOrder } from "@/lib/game/circle";
 import { CIRCLE_ANSWER_MAX_LENGTH, validateCircleAnswer } from "@/lib/game/validation";
 import CircleRecap, { CIRCLE_AWARDS } from "./CircleRecap";
 
@@ -23,8 +24,9 @@ interface CirclePlayerViewProps {
 // then react to everyone's answers once they reveal together.
 export default function CirclePlayerView({ sessionId, participantId, state }: CirclePlayerViewProps) {
   const { circle, question } = state;
+  const toasts = useSparkToasts(state, participantId);
 
-  if (circle.status === "recap" && circle.recap) {
+  if (circle.status !== "live" && circle.recap) {
     return (
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-6 py-12">
         <CircleRecap
@@ -34,6 +36,9 @@ export default function CirclePlayerView({ sessionId, participantId, state }: Ci
           highlightParticipantId={participantId}
         />
         <AwardVoting sessionId={sessionId} participantId={participantId} state={state} />
+        {circle.status === "ended" && (
+          <p className="text-center text-sm text-ink-faint">Thanks for playing. The host can start another game.</p>
+        )}
       </div>
     );
   }
@@ -42,14 +47,27 @@ export default function CirclePlayerView({ sessionId, participantId, state }: Ci
     return <div className="flex flex-1 items-center justify-center text-ink-soft">Next question coming up…</div>;
   }
 
+  const competitive = circle.settings.rewardStyle === "competitive";
+  const mySparks = state.totals.byParticipant.get(participantId) ?? 0;
+  const myHearts = state.totals.heartsByParticipant.get(participantId) ?? 0;
+
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-6 py-12">
-      <div className="flex items-center justify-between text-sm text-ink-soft">
+      <div className="flex items-center justify-between gap-2 text-sm text-ink-soft">
         <span>
           Question {state.questionNumber} of {circle.settings.questionCount}
         </span>
-        <span className="rounded-full bg-paper-2 px-3 py-1 text-ink">{CIRCLE_DEPTH_LABELS[question.depth]}</span>
+        <span className="flex items-center gap-2">
+          <span className="rounded-full bg-paper-2 px-3 py-1 text-ink">{CIRCLE_DEPTH_LABELS[question.depth]}</span>
+          <span
+            className="font-display font-semibold tabular-nums text-ink"
+            title={competitive ? "Hearts you’ve received" : "Sparks the group has earned"}
+          >
+            {competitive ? `${myHearts} 💛 · ${mySparks} ✨` : `${state.totals.pot} ✨`}
+          </span>
+        </span>
       </div>
+      <SparkToasts toasts={toasts} />
       <h1 className="font-display text-2xl font-bold leading-tight text-ink">{question.text}</h1>
       {question.phase === "answering" ? (
         <Answering
@@ -62,6 +80,58 @@ export default function CirclePlayerView({ sessionId, participantId, state }: Ci
       ) : (
         <Revealed sessionId={sessionId} participantId={participantId} state={state} />
       )}
+    </div>
+  );
+}
+
+interface Toast {
+  id: number;
+  text: string;
+}
+
+// Turns each new reward (see lib/circle/feedback.ts) into a short-lived
+// toast. The previous state is kept in state, not a ref, and compared
+// during render, React's pattern for reacting to a changed prop.
+function useSparkToasts(state: CircleState, participantId: string): Toast[] {
+  const [seen, setSeen] = useState(state);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  if (seen !== state) {
+    setSeen(state);
+    const messages = sparkFeedback(seen, state, participantId);
+    // Rewards belong to the question they were earned on; drop any still
+    // queued once the game moves on.
+    if (seen.question?.id !== state.question?.id) setToasts([]);
+    if (messages.length > 0) {
+      setToasts((current) => {
+        let id = current.at(-1)?.id ?? 0;
+        return [...current, ...messages.map((text) => ({ id: ++id, text }))];
+      });
+    }
+  }
+
+  useEffect(() => {
+    if (toasts.length === 0) return;
+    const timer = setTimeout(() => setToasts((current) => current.slice(1)), 2200);
+    return () => clearTimeout(timer);
+  }, [toasts]);
+
+  return toasts;
+}
+
+function SparkToasts({ toasts }: { toasts: Toast[] }) {
+  return (
+    <div
+      aria-live="polite"
+      className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex flex-col items-center gap-2 px-4"
+    >
+      {toasts.slice(0, 2).map((toast) => (
+        <p
+          key={toast.id}
+          className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-paper shadow-lg"
+        >
+          {toast.text}
+        </p>
+      ))}
     </div>
   );
 }
@@ -188,6 +258,23 @@ function Revealed({ sessionId, participantId, state }: CirclePlayerViewProps) {
   const spotlight = answers.find((a) => a.participantId === question.spotlightParticipantId) ?? null;
   const votedDeeper = deeperVotes.includes(participantId);
   const roomSize = question.participantCount ?? answers.length;
+  const outLoud = circle.settings.answerMode === "out_loud";
+  const answeredThis = answers.some((a) => a.participantId === participantId);
+  const heartProps = (answer: CircleAnswer) => ({
+    hearts: hearts.filter((h) => h.answerId === answer.id).length,
+    hearted: hearts.some((h) => h.answerId === answer.id && h.participantId === participantId),
+    onToggleHeart: (on: boolean) =>
+      handle(() =>
+        toggleCircleHeart({
+          sessionId,
+          circleId: circle.id,
+          circleQuestionId: question.id,
+          answerId: answer.id,
+          participantId,
+          on,
+        }),
+      ),
+  });
 
   async function handle(action: () => Promise<void>) {
     setError(null);
@@ -200,40 +287,64 @@ function Revealed({ sessionId, participantId, state }: CirclePlayerViewProps) {
 
   return (
     <div className="flex flex-col gap-5">
-      {spotlight && (
-        <div className="rounded-xl bg-spotlight/20 p-4 text-spotlight-ink">
-          <p className="text-sm font-medium">
-            {spotlight.participantId === participantId
-              ? "You’re in the spotlight"
-              : `Spotlight on ${displayName(spotlight.nickname)}`}
-          </p>
-          <p>{question.followUp ?? "Tell us more about that."}</p>
-        </div>
+      {!answeredThis && (
+        <p className="rounded-xl bg-paper-2 p-3 text-sm text-ink-soft">
+          You’re in from the next question. Here’s what everyone said to this one.
+        </p>
       )}
 
-      <ul className="flex flex-col gap-2.5">
-        {answers.map((answer) => (
-          <AnswerCard
-            key={answer.id}
-            answer={answer}
-            isMine={answer.participantId === participantId}
-            hearts={hearts.filter((h) => h.answerId === answer.id).length}
-            hearted={hearts.some((h) => h.answerId === answer.id && h.participantId === participantId)}
-            onToggleHeart={(on) =>
-              handle(() =>
-                toggleCircleHeart({
-                  sessionId,
-                  circleId: circle.id,
-                  circleQuestionId: question.id,
-                  answerId: answer.id,
-                  participantId,
-                  on,
-                }),
-              )
-            }
-          />
-        ))}
-      </ul>
+      {outLoud ? (
+        <>
+          <section className="flex flex-col gap-2">
+            <h2 className="text-sm font-medium text-ink-soft">Speaking order</h2>
+            <ol className="flex flex-col gap-2.5">
+              {speakingOrder(answers, question.spotlightParticipantId).map((answer, index) => (
+                <SpeakerCard
+                  key={answer.id}
+                  answer={answer}
+                  position={index + 1}
+                  isMine={answer.participantId === participantId}
+                  {...heartProps(answer)}
+                />
+              ))}
+            </ol>
+          </section>
+          {spotlight && (
+            <div className="rounded-xl bg-spotlight/20 p-4 text-spotlight-ink">
+              <p className="text-sm font-medium">
+                {spotlight.participantId === participantId
+                  ? "Once everyone’s shared, you get the follow-up"
+                  : `Once everyone’s shared, ask ${displayName(spotlight.nickname)}`}
+              </p>
+              <p>{question.followUp ?? "Tell us more about that."}</p>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {spotlight && (
+            <div className="rounded-xl bg-spotlight/20 p-4 text-spotlight-ink">
+              <p className="text-sm font-medium">
+                {spotlight.participantId === participantId
+                  ? "You’re in the spotlight"
+                  : `Spotlight on ${displayName(spotlight.nickname)}`}
+              </p>
+              <p>{question.followUp ?? "Tell us more about that."}</p>
+            </div>
+          )}
+
+          <ul className="flex flex-col gap-2.5">
+            {answers.map((answer) => (
+              <AnswerCard
+                key={answer.id}
+                answer={answer}
+                isMine={answer.participantId === participantId}
+                {...heartProps(answer)}
+              />
+            ))}
+          </ul>
+        </>
+      )}
 
       {question.depth < 3 && (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-hairline bg-white p-4 text-center">
@@ -294,7 +405,7 @@ function AnswerCard({
           {displayName(answer.nickname)}
           {isMine && " (you)"}
         </p>
-        <p className="text-ink">{answer.skipped ? "Skipped" : (answer.text ?? "Sharing out loud")}</p>
+        <p className="text-ink">{answer.skipped ? "Skipped" : answer.text}</p>
       </div>
       {canHeart ? (
         <button
@@ -315,11 +426,52 @@ function AnswerCard({
   );
 }
 
+function SpeakerCard({
+  answer,
+  position,
+  isMine,
+  hearts,
+  hearted,
+  onToggleHeart,
+}: {
+  answer: CircleAnswer;
+  position: number;
+  isMine: boolean;
+  hearts: number;
+  hearted: boolean;
+  onToggleHeart: (on: boolean) => void;
+}) {
+  return (
+    <li className="flex items-center justify-between gap-3 rounded-xl border border-hairline bg-white p-4">
+      <p className="text-ink">
+        <span className="mr-3 font-display font-semibold tabular-nums text-ink-faint">{position}</span>
+        {displayName(answer.nickname)}
+        {isMine && " (you)"}
+      </p>
+      {isMine ? (
+        hearts > 0 && <span className="shrink-0 text-sm text-ink-soft">💛 {hearts}</span>
+      ) : (
+        <button
+          type="button"
+          aria-pressed={hearted}
+          onClick={() => onToggleHeart(!hearted)}
+          className={`shrink-0 rounded-full px-3 py-1.5 text-sm transition-transform active:scale-90 ${
+            hearted ? "bg-spotlight/25 text-spotlight-ink" : "border border-hairline text-ink-soft"
+          }`}
+        >
+          {hearted ? "💛 Loved it" : "🤍 Loved what they said"}
+        </button>
+      )}
+    </li>
+  );
+}
+
 function AwardVoting({ sessionId, participantId, state }: CirclePlayerViewProps) {
   const { circle, awardVotes } = state;
   const [error, setError] = useState<string | null>(null);
-  const others = (circle.recap?.players ?? []).filter((p) => p.participantId !== participantId);
-  if (others.length === 0) return null;
+  const players = circle.recap?.players ?? [];
+  const others = players.filter((p) => p.participantId !== participantId);
+  if (!circleAwardsEnabled(players.length) || others.length === 0) return null;
 
   async function vote(award: (typeof CIRCLE_AWARDS)[number]["award"], nomineeParticipantId: string) {
     setError(null);

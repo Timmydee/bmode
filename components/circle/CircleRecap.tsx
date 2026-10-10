@@ -1,5 +1,5 @@
 import type { CircleAward, CircleAwardVote, CircleRecap as Recap } from "@/lib/backend";
-import { bondLevel, displayName } from "@/lib/game/circle";
+import { bondLevel, circleAwardsEnabled, displayName } from "@/lib/game/circle";
 
 export const CIRCLE_AWARDS: { award: CircleAward; label: string }[] = [
   { award: "best", label: "Best answer" },
@@ -28,6 +28,15 @@ export default function CircleRecap({
   const before = bondLevel(recap.bondBefore);
   const after = bondLevel(recap.bondAfter);
   const leveledUp = before.name !== after.name;
+  const competitive = recap.rewardStyle === "competitive";
+  const winners = recap.players.filter((p) => p.rank === 1);
+  const headline = !competitive
+    ? `+${recap.pot} Sparks together`
+    : winners.length === 0 || winners.length === recap.players.length
+      ? "It’s a tie!"
+      : `${winners.map((p) => displayName(p.nickname)).join(" & ")} ${winners.length === 1 ? "wins" : "win"}${
+          winners[0].hearts ? ` with ${winners[0].hearts} 💛` : ""
+        }`;
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -38,9 +47,8 @@ export default function CircleRecap({
         <h1 className={`font-display text-3xl font-bold ${stage ? "text-white" : "text-ink"}`}>
           That’s a wrap
         </h1>
-        <p className="mt-2 font-display text-2xl font-semibold text-spotlight">
-          +{recap.pot} Sparks together
-        </p>
+        <p className="mt-2 font-display text-2xl font-semibold text-spotlight">{headline}</p>
+        {competitive && <p className={`text-sm ${muted}`}>Most hearts received wins. +{recap.pot} Sparks for your bond.</p>}
       </div>
 
       <section className={`rounded-xl border p-4 ${card}`}>
@@ -105,6 +113,7 @@ export default function CircleRecap({
                   {player.participantId === highlightParticipantId && " (you)"}
                 </span>
                 <span className={`font-display font-semibold tabular-nums ${stage ? "text-white" : "text-ink"}`}>
+                  {competitive && player.hearts !== undefined && `${player.hearts} 💛 · `}
                   {player.sparks} ✨
                 </span>
               </li>
@@ -140,7 +149,7 @@ function AwardResults({
   card: string;
   stage: boolean;
 }) {
-  if (awardVotes.length === 0) return null;
+  if (awardVotes.length === 0 || !circleAwardsEnabled(recap.players.length)) return null;
   const names = new Map(recap.players.map((p) => [p.participantId, displayName(p.nickname)]));
 
   return (

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { backend } from "@/lib/backend";
+import { tallyFor } from "@/lib/circle/actions";
+import { isDeeperUnanimous, scoreCircleGame } from "@/lib/game/circle";
 import type {
   Circle,
   CircleAnswer,
@@ -9,6 +11,12 @@ import type {
   CircleHeart,
   CircleQuestion,
 } from "@/lib/backend";
+
+export interface CircleTotals {
+  pot: number; // the group's Sparks so far, the current question included
+  byParticipant: Map<string, number>; // each person's Sparks so far
+  heartsByParticipant: Map<string, number>; // hearts each person received
+}
 
 export interface CircleState {
   circle: Circle;
@@ -18,20 +26,34 @@ export interface CircleState {
   hearts: CircleHeart[]; // on the current question's answers
   deeperVotes: string[]; // participant ids
   awardVotes: CircleAwardVote[]; // recap only
+  totals: CircleTotals; // running totals while the game is live
 }
 
+const NO_TOTALS: CircleTotals = { pot: 0, byParticipant: new Map(), heartsByParticipant: new Map() };
+
 interface UseCircleResult {
-  state: CircleState | null; // the live or recap circle in this session, if any
+  // The live, recap or most recently closed circle in this session, if any.
+  state: CircleState | null;
   loading: boolean;
   refresh: () => void;
 }
 
+// The circle a session's screens show: the one being played or just
+// finished, or else the most recent closed one, so players keep their
+// recap (and award votes) on screen after the host closes the game.
+// Callers decide whether something newer, like a poll, takes over.
+function currentCircle(circles: Circle[]): Circle | null {
+  const active = circles.find((c) => c.status === "live" || c.status === "recap");
+  if (active) return active;
+  return [...circles].reverse().find((c) => c.status === "ended" && c.recap) ?? null;
+}
+
 async function loadCircleState(sessionId: string): Promise<CircleState | null> {
   const circles = await backend.circles.listBySession(sessionId);
-  const circle = circles.find((c) => c.status === "live" || c.status === "recap");
+  const circle = currentCircle(circles);
   if (!circle) return null;
 
-  if (circle.status === "recap") {
+  if (circle.status !== "live") {
     const awardVotes = await backend.circles.listAwardVotes(circle.id);
     return {
       circle,
@@ -41,27 +63,45 @@ async function loadCircleState(sessionId: string): Promise<CircleState | null> {
       hearts: [],
       deeperVotes: [],
       awardVotes,
+      totals: { ...NO_TOTALS, pot: circle.recap?.pot ?? circle.pot },
     };
   }
 
   const questions = await backend.circles.listQuestions(circle.id);
   const question = questions.find((q) => q.id === circle.currentQuestionId) ?? null;
-  if (!question) {
-    return { circle, question: null, questionNumber: 0, answers: [], hearts: [], deeperVotes: [], awardVotes: [] };
-  }
-  const [answers, deeperVotes] = await Promise.all([
-    backend.circles.listAnswers([question.id]),
-    backend.circles.listDeeperVotes(question.id),
+  const [allAnswers, deeperVotes] = await Promise.all([
+    backend.circles.listAnswers(questions.map((q) => q.id)),
+    question ? backend.circles.listDeeperVotes(question.id) : Promise.resolve([]),
   ]);
-  const hearts = await backend.circles.listHearts(answers.map((a) => a.id));
+  const allHearts = await backend.circles.listHearts(allAnswers.map((a) => a.id));
+
+  const totals = scoreCircleGame(
+    questions.map((q) =>
+      tallyFor(
+        q,
+        allAnswers,
+        allHearts,
+        q.id === question?.id
+          ? q.depth < 3 && isDeeperUnanimous(deeperVotes.length, q.participantCount ?? 0)
+          : q.wentDeeper,
+      ),
+    ),
+  );
+
+  if (!question) {
+    return { circle, question: null, questionNumber: 0, answers: [], hearts: [], deeperVotes: [], awardVotes: [], totals };
+  }
+  const answers = allAnswers.filter((a) => a.circleQuestionId === question.id);
+  const answerIds = new Set(answers.map((a) => a.id));
   return {
     circle,
     question,
     questionNumber: question.order + 1,
     answers,
-    hearts,
+    hearts: allHearts.filter((h) => answerIds.has(h.answerId)),
     deeperVotes,
     awardVotes: [],
+    totals,
   };
 }
 

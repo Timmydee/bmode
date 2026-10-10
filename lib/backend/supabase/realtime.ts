@@ -113,19 +113,24 @@ export function createSupabaseRealtime(): RealtimeClient {
     // is present for the session's whole lifetime) avoids that race.
     // Participant clients still call trackPresence so the host can see
     // them; they just don't also publish.
-    trackPresence(sessionId, participantId): Unsubscribe {
-      const isHost = participantId.startsWith(HOST_PRESENCE_KEY_PREFIX);
+    //
+    // onCount hands every presence-tracking client its own view of the
+    // presence state directly, so a page that tracks presence never has to
+    // trust a stale number (the database count includes everyone who ever
+    // joined; a broadcast can be missed while a page is still connecting).
+    trackPresence(sessionId, participantId, options = {}): Unsubscribe {
+      const publishCount =
+        options.publishCount ?? participantId.startsWith(HOST_PRESENCE_KEY_PREFIX);
       let lastCount = 0;
 
-      let channelBuilder = supabase.channel(`presence:${sessionId}`, {
-        config: { presence: { key: participantId } },
-      });
-
-      if (isHost) {
-        channelBuilder = channelBuilder.on("presence", { event: "sync" }, () => {
-          const state = channel.presenceState();
-          const count = countParticipants(state);
-          if (count === lastCount) return;
+      const channelBuilder = supabase
+        .channel(`presence:${sessionId}`, {
+          config: { presence: { key: participantId } },
+        })
+        .on("presence", { event: "sync" }, () => {
+          const count = countParticipants(channel.presenceState());
+          options.onCount?.(count);
+          if (!publishCount || count === lastCount) return;
           const type = count > lastCount ? "participant_joined" : "participant_left";
           lastCount = count;
 
@@ -140,7 +145,6 @@ export function createSupabaseRealtime(): RealtimeClient {
             payload: event,
           });
         });
-      }
 
       const channel = channelBuilder.subscribe(async (status) => {
         if (status === "SUBSCRIBED") {

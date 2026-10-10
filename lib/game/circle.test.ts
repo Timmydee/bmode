@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   bondLevel,
   chooseSpotlight,
+  circleAwardsEnabled,
   circleGroupKey,
   computeCircleRecap,
   isDeeperUnanimous,
   nextDepth,
   pickNextQuestion,
+  scoreCircleGame,
   scoreCircleQuestion,
+  speakingOrder,
   suggestQuestionSet,
   swapQuestion,
   type CircleQuestionTally,
@@ -20,6 +23,7 @@ const LIBRARY: LibraryQuestion[] = [
   { text: "Real A", followUp: "fc", depth: 2 },
   { text: "Deep A", followUp: "fd", depth: 3 },
   { text: "Catch up", followUp: "fe", depth: 1, reconnect: true },
+  { text: "About us", followUp: "ff", depth: 1, couples: true },
 ];
 
 const first = () => 0;
@@ -78,6 +82,12 @@ describe("pickNextQuestion", () => {
       library: LIBRARY,
     });
     expect(picked.text).toBe("Catch up");
+  });
+
+  it("serves couples questions only in the Just us two vibe", () => {
+    const base = { depth: 1 as const, questionIndex: 0, usedTexts: [], customQuestions: [], random: first, library: LIBRARY };
+    expect(pickNextQuestion({ ...base, vibe: "couples" }).text).toBe("About us");
+    expect(pickNextQuestion({ ...base, vibe: "reconnect", usedTexts: ["Catch up", "Light A", "Light B"] }).text).not.toBe("About us");
   });
 
   it("alternates the host's own questions with library ones", () => {
@@ -277,12 +287,120 @@ describe("computeCircleRecap", () => {
     });
     expect(recap.questionOfTheNight).toBe("Loved one");
   });
+
+  it("weighs the question of the night by hearts per answer and depth, not just going first", () => {
+    const recap = computeCircleRecap({
+      questions: [
+        tally({ text: "Light opener" }),
+        tally({ text: "Deeper one", depth: 2 }),
+      ],
+      participants,
+      rewardStyle: "together",
+      bondBefore: 10,
+      localHour: 12,
+    });
+    expect(recap.questionOfTheNight).toBe("Deeper one");
+  });
+
+  it("ranks Competitive on hearts received, so equal Sparks for answering still separate players", () => {
+    const recap = computeCircleRecap({
+      questions: [
+        tally({
+          answers: [
+            { id: "a1", participantId: "p1", skipped: false },
+            { id: "a2", participantId: "p2", skipped: false },
+          ],
+          hearts: [{ answerId: "a2", participantId: "p1" }],
+        }),
+      ],
+      participants,
+      rewardStyle: "competitive",
+      bondBefore: 50,
+      localHour: 12,
+    });
+    expect(recap.players.map((p) => [p.nickname, p.hearts, p.rank])).toEqual([
+      ["Ada", 1, 1],
+      ["Zara", 0, 2],
+    ]);
+  });
+
+  it("only gives Full Circle when everyone answered every question of a real game", () => {
+    const everyone = {
+      answers: [
+        { id: "a1", participantId: "p1", skipped: false },
+        { id: "a2", participantId: "p2", skipped: false },
+        { id: "a3", participantId: "p3", skipped: false },
+      ],
+    };
+    const recap = (count: number) =>
+      computeCircleRecap({
+        questions: Array.from({ length: count }, () => tally(everyone)),
+        participants,
+        rewardStyle: "together",
+        bondBefore: 10,
+        localHour: 12,
+      });
+    expect(recap(1).badges.map((b) => b.id)).not.toContain("full-circle");
+    expect(recap(3).badges.map((b) => b.id)).toContain("full-circle");
+  });
+});
+
+describe("suggestQuestionSet avoiding played questions", () => {
+  it("leaves out questions the group already played when enough are left", () => {
+    const set = suggestQuestionSet({ vibe: "know", count: 2, random: first, library: LIBRARY, avoidTexts: ["Light A"] });
+    expect(set.map((q) => q.text)).not.toContain("Light A");
+  });
+
+  it("falls back to the whole library rather than running short", () => {
+    const set = suggestQuestionSet({
+      vibe: "know",
+      count: 4,
+      random: first,
+      library: LIBRARY,
+      avoidTexts: ["Light A", "Light B", "Real A"],
+    });
+    expect(set.map((q) => q.text)).toEqual(["Light A", "Light B", "Real A"]);
+  });
+});
+
+describe("scoreCircleGame", () => {
+  it("adds up the pot and each person's Sparks and hearts across questions", () => {
+    const totals = scoreCircleGame([
+      tally({ hearts: [{ answerId: "a1", participantId: "p2" }] }),
+      tally(),
+    ]);
+    expect(totals.pot).toBe(43);
+    expect(totals.byParticipant.get("p1")).toBe(23);
+    expect(totals.heartsByParticipant.get("p1")).toBe(1);
+  });
+});
+
+describe("speakingOrder", () => {
+  it("puts the spotlight first and leaves out skippers", () => {
+    const order = speakingOrder(
+      [
+        { participantId: "p1", skipped: false },
+        { participantId: "p2", skipped: true },
+        { participantId: "p3", skipped: false },
+      ],
+      "p3",
+    );
+    expect(order.map((a) => a.participantId)).toEqual(["p3", "p1"]);
+  });
+});
+
+describe("circleAwardsEnabled", () => {
+  it("needs at least three players to vote between", () => {
+    expect(circleAwardsEnabled(2)).toBe(false);
+    expect(circleAwardsEnabled(3)).toBe(true);
+  });
 });
 
 describe("bondLevel", () => {
   it("reports the level and distance to the next one", () => {
-    expect(bondLevel(0)).toEqual({ name: "Strangers", nextName: "Acquaintances", toNext: 120, progress: 0 });
-    expect(bondLevel(300).name).toBe("Friends");
+    expect(bondLevel(0)).toEqual({ name: "Strangers", nextName: "Acquaintances", toNext: 300, progress: 0 });
+    expect(bondLevel(299).name).toBe("Strangers");
+    expect(bondLevel(900).name).toBe("Friends");
     expect(bondLevel(5000)).toEqual({ name: "Kindred", nextName: null, toNext: 0, progress: 1 });
   });
 });
