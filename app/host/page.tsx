@@ -149,7 +149,7 @@ export default function HostPage() {
             <li key={session.id}>
               <Link
                 href={`/host/${session.id}`}
-                className="flex items-center justify-between rounded-xl border border-hairline bg-white px-5 py-4"
+                className="flex items-center justify-between rounded-xl border border-hairline bg-paper-2 px-5 py-4"
               >
                 <span className="font-medium text-ink">{session.title}</span>
                 <StatusBadge status={session.status} />

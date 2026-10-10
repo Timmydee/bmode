@@ -66,7 +66,7 @@ export default function LeaderboardDisplay({
                 ? "border-success bg-success/15"
                 : isStage
                   ? "border-stage-line bg-stage-2"
-                  : "border-hairline bg-white"
+                  : "border-hairline bg-paper-2"
             }`}
           >
             <span className="flex items-center gap-3">

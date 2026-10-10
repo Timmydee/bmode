@@ -276,7 +276,7 @@ export interface CircleAwardVote {
 
 export interface CircleBadge {
   id: string;
-  icon: string;
+  icon: string; // an Icon name; recaps saved before the redesign hold an emoji
   name: string;
   detail: string;
 }

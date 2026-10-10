@@ -253,7 +253,7 @@ export function circleAwardsEnabled(playerCount: number): boolean {
 
 export function describeQuestionScore(score: CircleQuestionScore): string {
   const parts = [`+${score.pot} Sparks`];
-  if (score.hearts > 0) parts.push(`${score.hearts} 💛`);
+  if (score.hearts > 0) parts.push(`${score.hearts} ${score.hearts === 1 ? "heart" : "hearts"}`);
   if (score.fullCircle) parts.push("Full Circle");
   if (score.wentDeeper) parts.push("going deeper");
   return parts.join(" · ");
@@ -323,19 +323,19 @@ export function computeCircleRecap(input: {
   const questionsPlayed = input.questions.length;
   const badges: CircleBadge[] = [];
   if (input.bondBefore === 0) {
-    badges.push({ id: "icebreaker", icon: "🧊", name: "Icebreaker", detail: "First game as this group" });
+    badges.push({ id: "icebreaker", icon: "snowflake", name: "Icebreaker", detail: "First game as this group" });
   }
   // Badges are only worth having if they take a real game to earn.
   if (questionsPlayed >= 3 && fullCircles === questionsPlayed) {
-    badges.push({ id: "full-circle", icon: "⭕", name: "Full Circle", detail: "Everyone answered every question" });
+    badges.push({ id: "full-circle", icon: "ring", name: "Full Circle", detail: "Everyone answered every question" });
   }
-  if (deepAnswered) badges.push({ id: "deep-divers", icon: "🌊", name: "Deep Divers", detail: "Answered a Deep question" });
-  if (wentDeeper) badges.push({ id: "all-in", icon: "🤝", name: "All In", detail: "Agreed together to go deeper" });
+  if (deepAnswered) badges.push({ id: "deep-divers", icon: "waves", name: "Deep Divers", detail: "Answered a Deep question" });
+  if (wentDeeper) badges.push({ id: "all-in", icon: "users", name: "All In", detail: "Agreed together to go deeper" });
   if (totalHearts >= Math.max(5, 2 * players.length)) {
-    badges.push({ id: "big-hearts", icon: "💛", name: "Big Hearts", detail: `${totalHearts} hearts given` });
+    badges.push({ id: "big-hearts", icon: "heart", name: "Big Hearts", detail: `${totalHearts} hearts given` });
   }
   if (input.localHour >= 22 || input.localHour < 4) {
-    badges.push({ id: "night-owls", icon: "🌙", name: "Night Owls", detail: "Still talking after 10pm" });
+    badges.push({ id: "night-owls", icon: "moon", name: "Night Owls", detail: "Still talking after 10pm" });
   }
 
   return {
