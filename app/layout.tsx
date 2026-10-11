@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Figtree, Inter_Tight } from "next/font/google";
 import "./globals.css";
+import InsightsLayer from "./InsightsLayer";
 
 // The Bmode brand pairing from the PRD: Bricolage Grotesque for headings
 // and Figtree for reading. The cards use Inter Tight at heavy weights, in
@@ -32,7 +33,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${bricolageGrotesque.variable} ${figtree.variable} ${interTight.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-body">{children}</body>
+      <body className="min-h-full flex flex-col font-body">
+        {children}
+        <InsightsLayer />
+      </body>
     </html>
   );
 }

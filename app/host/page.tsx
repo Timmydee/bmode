@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { backend } from "@/lib/backend";
 import type { Session } from "@/lib/backend";
+import { track } from "@/lib/insights";
 
 export default function HostPage() {
   const router = useRouter();
@@ -69,6 +70,7 @@ export default function HostPage() {
         hostId: userId,
         title: trimmed,
       });
+      track("host_game", session.id);
       // A deck's "Play this deck" link on the landing page sends ?vibe=
       // along so the new session opens on a Circle with that vibe.
       const vibe = new URLSearchParams(window.location.search).get("vibe");
