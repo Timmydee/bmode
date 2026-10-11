@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import QuestionDeck from "@/components/landing/QuestionDeck";
 import { QUESTION_DECKS } from "@/lib/game/question-decks";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function Home() {
   return (

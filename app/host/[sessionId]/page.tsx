@@ -781,6 +781,10 @@ export default function HostSessionPage(
           }
           onActivate={handleActivateCircle}
         />
+        {/* Hidden for now: only Circle is offered. Uncomment these queues
+            (and the matching entries in ACTIVITY_CREATION_KINDS and
+            CreateActivitySection below) to bring back Poll, Word cloud,
+            Q&A, Round and Survey.
         <RoundQueue
           rounds={rounds}
           hasLiveActivity={Boolean(activeActivity) || circleRunning}
@@ -803,6 +807,7 @@ export default function HostSessionPage(
           }
           onActivate={handleActivate}
         />
+        */}
         <CreateActivitySection sessionId={sessionId} startVibe={startVibe} onCreated={refreshActivities} />
       </div>
 
@@ -1136,11 +1141,12 @@ type ActivityCreationKind = "circle" | "poll" | "wordcloud" | "qa" | "round" | "
 
 const ACTIVITY_CREATION_KINDS: { kind: ActivityCreationKind; label: string }[] = [
   { kind: "circle", label: "Circle" },
-  { kind: "poll", label: "Poll" },
-  { kind: "wordcloud", label: "Word cloud" },
-  { kind: "qa", label: "Q&A" },
-  { kind: "round", label: "Round" },
-  { kind: "survey", label: "Survey" },
+  // Hidden for now: only Circle is offered. Uncomment to bring these back.
+  // { kind: "poll", label: "Poll" },
+  // { kind: "wordcloud", label: "Word cloud" },
+  // { kind: "qa", label: "Q&A" },
+  // { kind: "round", label: "Round" },
+  // { kind: "survey", label: "Survey" },
 ];
 
 // Replaces the old always-visible stack of all 5 create-forms: pick a
@@ -1182,6 +1188,7 @@ function CreateActivitySection({
       {creatingKind === "circle" && (
         <CreateCircleForm sessionId={sessionId} initialVibe={startVibe ?? undefined} onCreated={handleCreated} />
       )}
+      {/* Hidden for now: only Circle is offered.
       {creatingKind === "poll" && (
         <CreatePollForm sessionId={sessionId} onCreated={handleCreated} />
       )}
@@ -1197,6 +1204,7 @@ function CreateActivitySection({
       {creatingKind === "survey" && (
         <CreateSurveyForm sessionId={sessionId} onCreated={handleCreated} />
       )}
+      */}
     </div>
   );
 }

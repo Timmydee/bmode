@@ -7,7 +7,7 @@ import Icon from "@/components/shared/Icon";
 import { signIn, signOut } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Bmode admin",
+  title: { absolute: "Bmode admin" },
   robots: { index: false, follow: false },
 };
 
