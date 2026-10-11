@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import BetaNote from "@/components/landing/BetaNote";
 import QuestionDeck from "@/components/landing/QuestionDeck";
 import { QUESTION_DECKS } from "@/lib/game/question-decks";
 
@@ -12,7 +13,12 @@ export default function Home() {
     // overflow-x-clip: a tossed card flies past the edge of the screen
     // without making the page scroll sideways.
     <div className="mx-auto w-full max-w-6xl overflow-x-clip px-6 py-12 sm:px-10 sm:py-20">
-      <p className="mb-3 text-sm text-ink-soft">Bmode</p>
+      <p className="mb-3 flex items-center gap-2 text-sm text-ink-soft">
+        Bmode
+        <span className="rounded-full border border-spotlight/50 bg-spotlight/25 px-2 py-0.5 text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.08em] text-ink">
+          Beta
+        </span>
+      </p>
       <h1 className="mb-6 font-display text-[2.6rem] font-bold leading-[1.02] text-ink sm:max-w-[13ch] sm:text-6xl lg:max-w-[20ch]">
         Helping people connect through better questions
       </h1>
@@ -34,6 +40,7 @@ export default function Home() {
           Join with a code
         </Link>
       </div>
+      <BetaNote />
 
       <section aria-labelledby="decks-heading" className="mt-16 sm:mt-20">
         <h2 id="decks-heading" className="font-display text-3xl font-bold text-ink">

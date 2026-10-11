@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Icon from "@/components/shared/Icon";
 
 export interface FeedbackSubmission {
@@ -11,6 +11,14 @@ export interface FeedbackSubmission {
 
 const RATING_LABELS = ["Not for me", "Meh", "Okay", "Good", "Loved it"];
 const MAX_MESSAGE = 2000;
+
+// Anything on the page can open the form with openFeedback() (the landing
+// page's beta note does), without passing a ref down from the layout.
+const OPEN_EVENT = "bmode:open-feedback";
+
+export function openFeedback() {
+  window.dispatchEvent(new Event(OPEN_EVENT));
+}
 
 // A small "Feedback" pill in the corner that opens a form in a native
 // <dialog> (focus trapping, Escape and the backdrop for free, like the QR
@@ -33,6 +41,11 @@ export default function FeedbackButton({
     setError(null);
     dialog.current?.showModal();
   }
+
+  useEffect(() => {
+    window.addEventListener(OPEN_EVENT, open);
+    return () => window.removeEventListener(OPEN_EVENT, open);
+  }, []);
 
   function close() {
     dialog.current?.close();
