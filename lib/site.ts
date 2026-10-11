@@ -1,0 +1,18 @@
+// Shared site details for metadata, the sitemap, robots.txt and the web
+// app manifest.
+export const SITE_NAME = "Bmode";
+export const SITE_TITLE = "Bmode: helping people connect through better questions";
+export const SITE_DESCRIPTION =
+  "Bmode is a question game for groups, couples and friends. Everyone answers on their own phone, then the cards flip together. No app needed.";
+
+// The public origin, used for absolute URLs in Open Graph tags and the
+// sitemap. NEXT_PUBLIC_SITE_URL wins (set it once a custom domain is live);
+// on Vercel the production domain is used, and locally it falls back to
+// the dev server.
+export function siteUrl(): URL {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
+  if (explicit) return new URL(explicit);
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (vercel) return new URL(`https://${vercel}`);
+  return new URL(`http://localhost:${process.env.PORT ?? 3000}`);
+}
