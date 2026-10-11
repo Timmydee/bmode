@@ -108,14 +108,14 @@ export default function CircleQuestionPicker({ vibe, questions, onChange, onSugg
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <IconButton label="Move up" disabled={index === 0} onClick={() => move(index, -1)}>
-                  ↑
+                  <Icon name="arrow-up" className="h-4 w-4" />
                 </IconButton>
                 <IconButton
                   label="Move down"
                   disabled={index === questions.length - 1}
                   onClick={() => move(index, 1)}
                 >
-                  ↓
+                  <Icon name="arrow-down" className="h-4 w-4" />
                 </IconButton>
                 {question.source === "library" && (
                   <IconButton label="Swap for another question" onClick={() => swap(index)}>

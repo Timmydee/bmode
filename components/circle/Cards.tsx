@@ -71,7 +71,22 @@ function CardMark({ tone }: { tone: "black" | "white" }) {
   );
 }
 
-const DEPTH_DOTS: Record<CircleDepth, string> = { 1: "●○○", 2: "●●○", 3: "●●●" };
+// Filled dots for how deep the question goes, drawn as shapes rather than
+// text glyphs so no phone turns them into emoji.
+function DepthDots({ depth }: { depth: CircleDepth }) {
+  return (
+    <span aria-hidden className="mr-2 inline-flex items-center gap-1 align-middle">
+      {[1, 2, 3].map((level) => (
+        <span
+          key={level}
+          className={`inline-block h-1.5 w-1.5 rounded-full ${
+            level <= depth ? "bg-white/70" : "ring-1 ring-white/50 ring-inset"
+          }`}
+        />
+      ))}
+    </span>
+  );
+}
 
 // The black card: the question everyone answers.
 export function QuestionCard({
@@ -101,9 +116,7 @@ export function QuestionCard({
       <div className="flex items-center justify-between">
         <CardMark tone="black" />
         <span className="font-card text-[11px] font-bold tracking-wide text-white/60 uppercase">
-          <span aria-hidden className="mr-1.5 tracking-[0.15em]">
-            {DEPTH_DOTS[depth]}
-          </span>
+          <DepthDots depth={depth} />
           {CIRCLE_DEPTH_LABELS[depth]}
         </span>
       </div>
