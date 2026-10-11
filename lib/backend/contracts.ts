@@ -25,6 +25,10 @@ import type {
   CircleRecap,
   CircleSettings,
   CircleStatus,
+  Feedback,
+  FeedbackDraft,
+  InsightsSummary,
+  UsageEventKind,
 } from "./types";
 import type { SessionEvent } from "./events";
 
@@ -246,6 +250,26 @@ export interface PresenceOptions {
   publishCount?: boolean; // defaults to true for "host:" keys
 }
 
+export interface InsightsRepository {
+  /** Fire-and-forget usage count; callers ignore failures. */
+  recordEvent(input: {
+    deviceId: string;
+    event: UsageEventKind;
+    sessionId?: string | null;
+  }): Promise<void>;
+  sendFeedback(draft: FeedbackDraft): Promise<void>;
+}
+
+/**
+ * Server-only reader for the /admin page. The tables it reads are
+ * insert-only from the browser, so this needs privileged credentials and
+ * must never be imported into client code.
+ */
+export interface InsightsAdminReader {
+  summary(): Promise<InsightsSummary>;
+  listFeedback(limit: number): Promise<Feedback[]>;
+}
+
 export interface RealtimeClient {
   /** Subscribe to everything happening in one session. */
   subscribe(
@@ -291,6 +315,7 @@ export interface Backend {
   scores: ScoreRepository;
   surveys: SurveyRepository;
   circles: CircleRepository;
+  insights: InsightsRepository;
   realtime: RealtimeClient;
   auth: AuthClient;
 }

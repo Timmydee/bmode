@@ -297,3 +297,44 @@ export interface CircleRecap {
   questionOfTheNight: string | null;
   questionsPlayed: number;
 }
+
+// Usage counts and in-app feedback (migration 0009). A device is a random
+// id kept in the browser, never tied to a name or email.
+export type UsageEventKind = "visit" | "host_game" | "join_game";
+
+export interface FeedbackDraft {
+  deviceId: string | null;
+  rating: number | null; // 1-5, or null when skipped
+  message: string;
+  email: string | null; // optional, only if the person chose to leave one
+  page: string | null;
+  sessionId: string | null;
+}
+
+export interface Feedback extends FeedbackDraft {
+  id: string;
+  createdAt: string;
+}
+
+export interface InsightsDay {
+  day: string; // YYYY-MM-DD
+  people: number;
+  games: number;
+  joins: number;
+}
+
+export interface InsightsSummary {
+  peopleToday: number;
+  people7d: number;
+  people30d: number;
+  peopleAll: number;
+  games7d: number;
+  gamesAll: number;
+  joins7d: number;
+  joinsAll: number;
+  circlesFinishedAll: number;
+  feedbackAll: number;
+  ratingAvg: number | null;
+  trackingSince: string | null;
+  daily: InsightsDay[];
+}

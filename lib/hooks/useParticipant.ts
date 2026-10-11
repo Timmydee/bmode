@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { backend } from "@/lib/backend";
 import { getParticipantToken } from "@/lib/identity/participant-token";
+import { track } from "@/lib/insights";
 import type { Participant } from "@/lib/backend";
 
 interface UseParticipantResult {
@@ -48,6 +49,7 @@ export function useParticipant(
       nickname,
       token,
     });
+    track("join_game", sessionId);
     setLookedUp({ sessionId, participant: joined });
     return joined;
   }
