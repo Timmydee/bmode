@@ -2,11 +2,13 @@ import type { CSSProperties, ReactNode } from "react";
 import type { CircleDepth } from "@/lib/backend";
 import { CIRCLE_DEPTH_LABELS } from "@/lib/game/circle";
 import Icon, { type IconName } from "@/components/shared/Icon";
+import { CATEGORY_STYLES } from "@/components/cards/CardFace";
+import { cardStockStyle, stockForQuestion } from "@/lib/cards/card-stock";
 
-// The pieces every Circle screen is built from: black question cards,
+// The pieces every Circle screen is built from: coloured question cards,
 // white answer cards, face-down card backs, avatars with presence, and
-// reaction pills. Cards follow Cards Against Humanity (heavy type, black
-// or white stock, a small mark in the corner); everything around them
+// reaction pills. Cards follow Cards Against Humanity (heavy type, a
+// small mark in the corner, white stock for answers); everything around them
 // follows the Discord-style dark system in tailwind.config.ts.
 
 const AVATAR_COLORS = ["bg-blurple", "bg-live", "bg-gold", "bg-fuchsia", "bg-ember", "bg-stage-button"];
@@ -88,7 +90,9 @@ function DepthDots({ depth }: { depth: CircleDepth }) {
   );
 }
 
-// The black card: the question everyone answers.
+// The question card everyone answers, on the same stock as the card
+// library: a bank question on its category's colour, a question the host
+// wrote on cobalt or teal by depth.
 export function QuestionCard({
   text,
   depth,
@@ -100,12 +104,20 @@ export function QuestionCard({
   size?: "md" | "lg";
   className?: string;
 }) {
+  const stock = stockForQuestion(text, depth);
   return (
     <div
-      className={`flex flex-col justify-between rounded-2xl bg-card-black text-white shadow-[0_12px_32px_rgb(0_0_0/45%)] ring-1 ring-white/15 ${
+      style={cardStockStyle(stock)}
+      className={`relative isolate flex flex-col justify-between overflow-hidden rounded-2xl text-white shadow-[0_12px_32px_rgb(0_0_0/45%)] ring-1 ring-white/20 ${
         size === "lg" ? "min-h-64 gap-10 p-8 sm:p-10" : "min-h-44 gap-6 p-6"
       } ${className}`}
     >
+      <Icon
+        name={CATEGORY_STYLES[stock].icon}
+        className={`pointer-events-none absolute -z-10 text-white/[0.07] ${
+          size === "lg" ? "-right-10 -bottom-10 h-64 w-64" : "-right-8 -bottom-8 h-44 w-44"
+        }`}
+      />
       <p
         className={`font-card font-extrabold tracking-tight text-balance ${
           size === "lg" ? "text-3xl leading-[1.12] sm:text-[2.6rem]" : "text-[1.6rem] leading-[1.15]"
@@ -115,7 +127,7 @@ export function QuestionCard({
       </p>
       <div className="flex items-center justify-between">
         <CardMark tone="black" />
-        <span className="font-card text-[11px] font-bold tracking-wide text-white/60 uppercase">
+        <span className="font-card text-[11px] font-bold tracking-wide text-white/85 uppercase">
           <DepthDots depth={depth} />
           {CIRCLE_DEPTH_LABELS[depth]}
         </span>

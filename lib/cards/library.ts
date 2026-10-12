@@ -50,8 +50,22 @@ export function cardById(id: number): BankQuestion | null {
 }
 
 export function cardsInCategory(category: CardCategoryId | null): BankQuestion[] {
-  return CIRCLE_QUESTIONS.filter((question) => !category || cardCategory(question).id === category);
+  if (category) return CIRCLE_QUESTIONS.filter((question) => cardCategory(question).id === category);
+  return ALL_CARDS_DEALT;
 }
+
+// The whole deck, dealt one category at a time (an icebreaker, then a
+// relationship card, then a friendship card...) so browsing "All" shows a
+// mix of colours rather than fifteen icebreakers in a row. Same order on
+// every visit.
+const ALL_CARDS_DEALT: BankQuestion[] = (() => {
+  const piles = CARD_CATEGORIES.map((c) => CIRCLE_QUESTIONS.filter((question) => cardCategory(question).id === c.id));
+  const dealt: BankQuestion[] = [];
+  for (let round = 0; dealt.length < CIRCLE_QUESTIONS.length; round++) {
+    for (const pile of piles) if (round < pile.length) dealt.push(pile[round]);
+  }
+  return dealt;
+})();
 
 // A collection is as long as the longest Circle game, so any collection
 // can be played as it stands.

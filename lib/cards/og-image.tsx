@@ -1,18 +1,24 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { CARD_STOCK } from "./card-stock";
+import type { CardCategoryId } from "./library";
 
-// Link previews for card pages and shared collections: the black question
-// card itself on the deep indigo background, so a shared link looks like
-// the card it opens. Colours are the tokens from tailwind.config.ts.
+// Link previews for card pages and shared collections: the question card
+// itself, on its category's stock, on the deep indigo background, so a
+// shared link looks like the card it opens. The page colour is a token
+// from tailwind.config.ts; card colours come from card-stock.ts.
 export const OG_SIZE = { width: 1200, height: 630 };
 
 const STAGE = "#14152B";
-const STAGE_2 = "#1E2042";
-const STAGE_LINE = "#2E3162";
-const CARD_BLACK = "#0B0B0C";
-const BLURPLE = "#5865F2";
-const INK_SOFT = "#B9BCDB";
+const CARD_INK = "rgba(255,255,255,0.85)";
+
+// Previews use the stock's gradient without the pattern layer, which the
+// image renderer doesn't draw reliably.
+function stockBackground(id: CardCategoryId): string {
+  const stock = CARD_STOCK[id];
+  return `linear-gradient(135deg, ${stock.light}, ${stock.dark})`;
+}
 
 const font = readFile(join(process.cwd(), "assets/fonts/InterTight-ExtraBold.ttf"));
 
@@ -26,9 +32,12 @@ function textSize(text: string): number {
 export async function renderCardImage(input: {
   text: string;
   label: string; // bottom-right of the card: the category, or "Collection"
+  stock: CardCategoryId;
   more?: number; // further cards in a collection
+  behind?: CardCategoryId[]; // stock of the next cards, peeking out underneath
 }): Promise<ImageResponse> {
   const stacked = input.more ? Math.min(input.more, 2) : 0;
+  const behind = input.behind ?? [];
   return new ImageResponse(
     (
       <div
@@ -50,8 +59,9 @@ export async function renderCardImage(input: {
               width: 820,
               height: 470,
               borderRadius: 32,
-              background: STAGE_2,
-              border: `2px solid ${STAGE_LINE}`,
+              backgroundImage: stockBackground(behind[1] ?? input.stock),
+              border: "2px solid rgba(255,255,255,0.2)",
+              opacity: 0.7,
               transform: "translate(34px, 26px) rotate(5deg)",
             }}
           />
@@ -63,8 +73,9 @@ export async function renderCardImage(input: {
               width: 820,
               height: 470,
               borderRadius: 32,
-              background: "#1A1B2E",
-              border: `2px solid ${STAGE_LINE}`,
+              backgroundImage: stockBackground(behind[0] ?? input.stock),
+              border: "2px solid rgba(255,255,255,0.2)",
+              opacity: 0.85,
               transform: "translate(-18px, 14px) rotate(-3deg)",
             }}
           />
@@ -74,8 +85,8 @@ export async function renderCardImage(input: {
             width: 820,
             height: 470,
             borderRadius: 32,
-            background: CARD_BLACK,
-            border: "2px solid rgba(255,255,255,0.15)",
+            backgroundImage: stockBackground(input.stock),
+            border: "2px solid rgba(255,255,255,0.2)",
             boxShadow: "0 24px 60px rgba(0,0,0,0.5)",
             padding: "56px 60px 44px",
             display: "flex",
@@ -89,11 +100,11 @@ export async function renderCardImage(input: {
             {input.text}
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 14, color: "rgba(255,255,255,0.75)" }}>
-              <div style={{ width: 20, height: 20, background: BLURPLE, borderRadius: 4, transform: "rotate(45deg)" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 14, color: CARD_INK }}>
+              <div style={{ width: 20, height: 20, background: CARD_INK, borderRadius: 4, transform: "rotate(45deg)" }} />
               Bmode
             </div>
-            <div style={{ display: "flex", color: INK_SOFT, textTransform: "uppercase", letterSpacing: 2, fontSize: 20 }}>
+            <div style={{ display: "flex", color: CARD_INK, textTransform: "uppercase", letterSpacing: 2, fontSize: 20 }}>
               {input.more ? `+${input.more} more ${input.more === 1 ? "question" : "questions"}` : input.label}
             </div>
           </div>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import BetaNote from "@/components/landing/BetaNote";
 import QuestionDeck from "@/components/landing/QuestionDeck";
 import Icon from "@/components/shared/Icon";
+import { cardStockStyle } from "@/lib/cards/card-stock";
 import { CIRCLE_QUESTIONS } from "@/lib/game/circle-questions";
 import { QUESTION_DECKS } from "@/lib/game/question-decks";
 
@@ -59,8 +60,11 @@ export default function Home() {
       >
         <span aria-hidden className="relative h-14 w-11 shrink-0">
           <span className="card-back-pattern absolute inset-0 rotate-6 rounded-lg ring-1 ring-white/10" />
-          <span className="absolute inset-0 flex -rotate-3 items-end p-1.5 rounded-lg bg-card-black ring-1 ring-white/20 transition-transform group-hover:-rotate-6">
-            <span className="h-2 w-2 rotate-45 rounded-[2px] bg-blurple" />
+          <span
+            style={cardStockStyle("relationships")}
+            className="absolute inset-0 flex -rotate-3 items-end p-1.5 rounded-lg ring-1 ring-white/20 transition-transform group-hover:-rotate-6"
+          >
+            <span className="h-2 w-2 rotate-45 rounded-[2px] bg-white/85" />
           </span>
         </span>
         <span className="flex-1">

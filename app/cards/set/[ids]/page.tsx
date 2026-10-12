@@ -6,6 +6,7 @@ import CardsHeader from "@/components/cards/CardsHeader";
 import CollectionActions from "@/components/cards/CollectionActions";
 import { FlipCard } from "@/components/circle/Cards";
 import { cardCategory, cardPath, collectionCards, collectionPath } from "@/lib/cards/library";
+import { SITE_NAME } from "@/lib/site";
 
 // A shared collection: the cards someone picked, in their order. The link
 // itself carries the card ids, so nothing is stored anywhere.
@@ -25,8 +26,10 @@ export async function generateMetadata(props: PageProps<"/cards/set/[ids]">): Pr
     // Collections are made by visitors, so they stay out of search results;
     // the single card pages are what gets indexed.
     robots: { index: false, follow: true },
-    openGraph: { title, description },
-    twitter: { title, description },
+    openGraph: { type: "website", siteName: SITE_NAME, title, description, url: collectionPath(cards.map((card) => card.id)) },
+    // Setting twitter here replaces the layout's, so the big image card is
+    // named again; otherwise previews fall back to a small thumbnail.
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 
