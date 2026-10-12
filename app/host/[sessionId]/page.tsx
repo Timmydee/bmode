@@ -139,7 +139,10 @@ export default function HostSessionPage(
   props: PageProps<"/host/[sessionId]">,
 ) {
   const { sessionId } = use(props.params);
-  const startVibe = parseVibe(use(props.searchParams).vibe);
+  const searchParams = use(props.searchParams);
+  const startVibe = parseVibe(searchParams.vibe);
+  // Cards picked in the card library (/cards), played in this order.
+  const startCards = typeof searchParams.cards === "string" ? searchParams.cards : null;
 
   // "Host and play": the host can join their own Circle as a player from
   // this page (same browser token as /join), with the host controls in a
@@ -808,7 +811,12 @@ export default function HostSessionPage(
           onActivate={handleActivate}
         />
         */}
-        <CreateActivitySection sessionId={sessionId} startVibe={startVibe} onCreated={refreshActivities} />
+        <CreateActivitySection
+          sessionId={sessionId}
+          startVibe={startVibe}
+          startCards={startCards}
+          onCreated={refreshActivities}
+        />
       </div>
 
       <div className="mt-10 flex items-center justify-between">
@@ -1157,15 +1165,20 @@ const ACTIVITY_CREATION_KINDS: { kind: ActivityCreationKind; label: string }[] =
 function CreateActivitySection({
   sessionId,
   startVibe,
+  startCards,
   onCreated,
 }: {
   sessionId: string;
   // Set when the host came from a deck on the landing page: open straight
   // on a Circle with that deck's vibe.
   startVibe: CircleVibe | null;
+  // Card ids from the card library ("3-12-40"): open on a Circle with them.
+  startCards: string | null;
   onCreated: () => void;
 }) {
-  const [creatingKind, setCreatingKind] = useState<ActivityCreationKind | null>(startVibe ? "circle" : null);
+  const [creatingKind, setCreatingKind] = useState<ActivityCreationKind | null>(
+    startVibe || startCards ? "circle" : null,
+  );
 
   function handleCreated() {
     onCreated();
@@ -1186,7 +1199,12 @@ function CreateActivitySection({
         ))}
       </div>
       {creatingKind === "circle" && (
-        <CreateCircleForm sessionId={sessionId} initialVibe={startVibe ?? undefined} onCreated={handleCreated} />
+        <CreateCircleForm
+          sessionId={sessionId}
+          initialVibe={startVibe ?? undefined}
+          initialCards={startCards}
+          onCreated={handleCreated}
+        />
       )}
       {/* Hidden for now: only Circle is offered.
       {creatingKind === "poll" && (

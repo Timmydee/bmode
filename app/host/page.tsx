@@ -72,9 +72,16 @@ export default function HostPage() {
       });
       track("host_game", session.id);
       // A deck's "Play this deck" link on the landing page sends ?vibe=
-      // along so the new session opens on a Circle with that vibe.
-      const vibe = new URLSearchParams(window.location.search).get("vibe");
-      router.push(vibe ? `/host/${session.id}?vibe=${encodeURIComponent(vibe)}` : `/host/${session.id}`);
+      // along so the new session opens on a Circle with that vibe; the
+      // card library adds ?cards= with the questions it picked.
+      const incoming = new URLSearchParams(window.location.search);
+      const next = new URLSearchParams();
+      for (const key of ["vibe", "cards"]) {
+        const value = incoming.get(key);
+        if (value) next.set(key, value);
+      }
+      const query = next.toString();
+      router.push(query ? `/host/${session.id}?${query}` : `/host/${session.id}`);
     } catch (error) {
       setCreateError(
         error instanceof Error
