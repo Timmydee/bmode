@@ -27,6 +27,14 @@ describe("card categories", () => {
     for (const category of CARD_CATEGORIES) expect(cardsInCategory(category.id).length).toBeGreaterThan(4);
   });
 
+  it("deals every card once in the All view, mixing categories", () => {
+    const all = cardsInCategory(null);
+    expect(new Set(all.map((card) => card.id)).size).toBe(CIRCLE_QUESTIONS.length);
+    expect(all.slice(0, CARD_CATEGORIES.length).map((card) => cardCategory(card).id)).toEqual(
+      CARD_CATEGORIES.map((c) => c.id),
+    );
+  });
+
   it("keeps themed questions in the category whose vibe can play them", () => {
     for (const q of CIRCLE_QUESTIONS) {
       if (q.couples) expect(cardCategory(q).vibe).toBe("couples");

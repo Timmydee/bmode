@@ -6,10 +6,11 @@ import { FlipCard, QuestionCard } from "@/components/circle/Cards";
 import Icon, { type IconName } from "@/components/shared/Icon";
 import type { QuestionDeck as Deck } from "@/lib/game/question-decks";
 
+// In the hue of each deck's card stock (lib/cards/card-stock.ts).
 const STYLES: Record<Deck["id"], { icon: IconName; chip: string; dot: string }> = {
-  relationship: { icon: "heart", chip: "bg-fuchsia/15 text-fuchsia", dot: "bg-fuchsia" },
-  friendship: { icon: "smile", chip: "bg-gold/15 text-gold", dot: "bg-gold" },
-  tribe: { icon: "flame", chip: "bg-blurple/20 text-blurple-soft", dot: "bg-blurple" },
+  relationship: { icon: "heart", chip: "bg-[#D02A6C]/20 text-[#FF8DBC]", dot: "bg-[#FF8DBC]" },
+  friendship: { icon: "smile", chip: "bg-[#C94D16]/25 text-[#FFAE7F]", dot: "bg-[#FFAE7F]" },
+  tribe: { icon: "flame", chip: "bg-[#2F5BE0]/25 text-[#93B0FF]", dot: "bg-[#93B0FF]" },
 };
 
 // Decks deal in one after another, then each turns over a new card every
@@ -24,7 +25,7 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-// One sample deck on the landing page: a stack of black cards showing a
+// One sample deck on the landing page: a stack of question cards showing a
 // real question. Tapping the card (or waiting) tosses it aside and turns
 // over the next one.
 export default function QuestionDeck({ deck, position }: { deck: Deck; position: number }) {

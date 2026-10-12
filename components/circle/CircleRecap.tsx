@@ -2,6 +2,7 @@ import type { CircleAward, CircleAwardVote, CircleRecap as Recap } from "@/lib/b
 import { bondLevel, circleAwardsEnabled, displayName } from "@/lib/game/circle";
 import { Avatar } from "./Cards";
 import Icon, { type IconName } from "@/components/shared/Icon";
+import { cardStockStyle, stockForQuestion } from "@/lib/cards/card-stock";
 
 const BADGE_ICONS: Record<string, IconName> = {
   icebreaker: "snowflake",
@@ -157,8 +158,11 @@ export default function CircleRecap({
       )}
 
       {recap.questionOfTheNight && (
-        <section className="flex flex-col gap-3 rounded-2xl bg-card-black p-6 text-white ring-1 ring-white/10">
-          <p className="text-xs font-bold tracking-wide text-white/60 uppercase">Question of the night</p>
+        <section
+          style={cardStockStyle(stockForQuestion(recap.questionOfTheNight, 3))}
+          className="flex flex-col gap-3 rounded-2xl p-6 text-white ring-1 ring-white/20"
+        >
+          <p className="text-xs font-bold tracking-wide text-white/80 uppercase">Question of the night</p>
           <p className="font-card text-2xl leading-tight font-extrabold tracking-tight">{recap.questionOfTheNight}</p>
         </section>
       )}

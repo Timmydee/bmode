@@ -12,6 +12,7 @@ export function generateStaticParams() {
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const card = cardById(Number((await params).id));
-  if (!card) return renderCardImage({ text: "Helping people connect through better questions", label: "Bmode" });
-  return renderCardImage({ text: card.text, label: cardCategory(card).name });
+  if (!card) return renderCardImage({ text: "Helping people connect through better questions", label: "Bmode", stock: "icebreakers" });
+  const category = cardCategory(card);
+  return renderCardImage({ text: card.text, label: category.name, stock: category.id });
 }
