@@ -10,7 +10,8 @@ import type {
   CircleVibe,
 } from "@/lib/backend";
 import { CIRCLE_DEPTH_LABELS, CIRCLE_VIBES, suggestQuestionSet } from "@/lib/game/circle";
-import { validateCircleDraft } from "@/lib/game/validation";
+import { CIRCLE_MIN_QUESTIONS, validateCircleDraft } from "@/lib/game/validation";
+import { collectionCards } from "@/lib/cards/library";
 import CircleQuestionPicker from "./CircleQuestionPicker";
 
 const REWARD_STYLES: { value: CircleRewardStyle; label: string; description: string }[] = [
@@ -28,13 +29,16 @@ const DEFAULT_COUNT = 8;
 // Two steps: set the game up, then see and shape the exact questions
 // before anything is created. The picker starts from a suggested set for
 // the chosen vibe so a host can create a game in two taps, or curate it.
+// Coming from the card library, it starts from the cards they picked.
 export default function CreateCircleForm({
   sessionId,
   initialVibe = "know",
+  initialCards = null,
   onCreated,
 }: {
   sessionId: string;
   initialVibe?: CircleVibe;
+  initialCards?: string | null; // card ids from /cards, e.g. "3-12-40"
   onCreated: () => void;
 }) {
   const [step, setStep] = useState<"setup" | "questions">("setup");
@@ -42,11 +46,14 @@ export default function CreateCircleForm({
   const [vibe, setVibe] = useState<CircleVibe>(initialVibe);
   const [rewardStyle, setRewardStyle] = useState<CircleRewardStyle>("together");
   const [answerMode, setAnswerMode] = useState<CircleAnswerMode>("typed");
-  const [questions, setQuestions] = useState<CirclePlannedQuestion[]>([]);
+  const [questions, setQuestions] = useState<CirclePlannedQuestion[]>(() =>
+    plannedFromCards(initialCards, initialVibe),
+  );
   // Which vibe the current list was suggested for, and whether the host
   // has touched it since — a hand-edited list is never replaced silently.
+  // Picked cards count as hand-edited.
   const [suggestedFor, setSuggestedFor] = useState<CircleVibe | null>(null);
-  const [edited, setEdited] = useState(false);
+  const [edited, setEdited] = useState(() => questions.length > 0);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -175,6 +182,25 @@ export default function CreateCircleForm({
       </div>
     </form>
   );
+}
+
+// The picked cards in order. Fewer than a game needs (one shared card, say)
+// are topped up with suggestions for the vibe, which the host can still swap.
+function plannedFromCards(ids: string | null, vibe: CircleVibe): CirclePlannedQuestion[] {
+  const picked: CirclePlannedQuestion[] = collectionCards(ids).map((card) => ({
+    text: card.text,
+    followUp: card.followUp,
+    depth: card.depth,
+    source: "library",
+  }));
+  if (picked.length === 0 || picked.length >= CIRCLE_MIN_QUESTIONS) return picked;
+  const extra = suggestQuestionSet({
+    vibe,
+    count: DEFAULT_COUNT - picked.length,
+    random: Math.random,
+    avoidTexts: picked.map((q) => q.text),
+  });
+  return [...picked, ...extra];
 }
 
 function DepthSummary({ questions }: { questions: CirclePlannedQuestion[] }) {
