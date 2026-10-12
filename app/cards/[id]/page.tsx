@@ -8,6 +8,7 @@ import CardsHeader from "@/components/cards/CardsHeader";
 import Icon from "@/components/shared/Icon";
 import { cardById, cardCategory, cardPath, cardsInCategory } from "@/lib/cards/library";
 import { CIRCLE_QUESTIONS } from "@/lib/game/circle-questions";
+import { SITE_NAME } from "@/lib/site";
 
 // One question card on its own page, the page a shared card link opens.
 // Every card is built ahead of time; unknown ids are a 404.
@@ -30,8 +31,8 @@ export async function generateMetadata(props: PageProps<"/cards/[id]">): Promise
     title: card.text,
     description,
     alternates: { canonical: cardPath(card.id) },
-    openGraph: { type: "article", title: card.text, description, url: cardPath(card.id) },
-    twitter: { title: card.text, description },
+    openGraph: { type: "article", siteName: SITE_NAME, title: card.text, description, url: cardPath(card.id) },
+    twitter: { card: "summary_large_image", title: card.text, description },
   };
 }
 
