@@ -38,7 +38,7 @@ import QuestionList from "@/components/qa/QuestionList";
 import CountdownBadge from "@/components/round/CountdownBadge";
 import LeaderboardDisplay from "@/components/round/LeaderboardDisplay";
 import WinnersPodium from "@/components/round/WinnersPodium";
-import Icon from "@/components/shared/Icon";
+import Icon, { type IconName } from "@/components/shared/Icon";
 
 const REVEAL_PAUSE_MS = 4000;
 
@@ -764,7 +764,7 @@ export default function HostSessionPage(
         <div className="flex flex-col gap-2">
           <h1 className="font-display text-3xl font-bold sm:text-4xl">{session.title}</h1>
           <p className="text-stage-muted">
-            Pick an activity below once your audience has joined.
+            Set up a Circle below, then start it once everyone has joined.
           </p>
         </div>
       )}
@@ -1157,11 +1157,10 @@ const ACTIVITY_CREATION_KINDS: { kind: ActivityCreationKind; label: string }[] =
   // { kind: "survey", label: "Survey" },
 ];
 
-// Replaces the old always-visible stack of all 5 create-forms: pick a
-// type, fill in just that one form, submit collapses back to the picker.
-// Each form keeps mounting/unmounting on selection rather than being
-// hidden via CSS, so switching types always starts from a clean, empty
-// form instead of leftover state bleeding between types.
+// Only Circle is offered for now, so its setup shows straight away with a
+// short explainer instead of an activity picker. To bring back the other
+// types, restore the TypeChip row over ACTIVITY_CREATION_KINDS and the
+// commented-out forms below.
 function CreateActivitySection({
   sessionId,
   startVibe,
@@ -1176,54 +1175,60 @@ function CreateActivitySection({
   startCards: string | null;
   onCreated: () => void;
 }) {
-  const [creatingKind, setCreatingKind] = useState<ActivityCreationKind | null>(
-    startVibe || startCards ? "circle" : null,
-  );
+  // Bumped after each create so the form remounts empty for the next game.
+  const [formKey, setFormKey] = useState(0);
 
   function handleCreated() {
     onCreated();
-    setCreatingKind(null);
+    setFormKey((key) => key + 1);
   }
 
   return (
-    <div className="mt-8 flex flex-col gap-4 border-t border-stage-line pt-8 first:mt-0 first:border-t-0 first:pt-0">
-      <p className="text-sm font-medium text-stage-muted">Add an activity</p>
-      <div className="flex flex-wrap gap-2">
-        {ACTIVITY_CREATION_KINDS.map(({ kind, label }) => (
-          <TypeChip
-            key={kind}
-            label={label}
-            selected={creatingKind === kind}
-            onClick={() => setCreatingKind((current) => (current === kind ? null : kind))}
-          />
-        ))}
-      </div>
-      {creatingKind === "circle" && (
-        <CreateCircleForm
-          sessionId={sessionId}
-          initialVibe={startVibe ?? undefined}
-          initialCards={startCards}
-          onCreated={handleCreated}
-        />
-      )}
+    <div className="mt-8 flex flex-col gap-5 border-t border-stage-line pt-8 first:mt-0 first:border-t-0 first:pt-0">
+      <CircleExplainer />
+      <CreateCircleForm
+        key={formKey}
+        sessionId={sessionId}
+        initialVibe={formKey === 0 ? startVibe ?? undefined : undefined}
+        initialCards={formKey === 0 ? startCards : null}
+        onCreated={handleCreated}
+      />
       {/* Hidden for now: only Circle is offered.
-      {creatingKind === "poll" && (
-        <CreatePollForm sessionId={sessionId} onCreated={handleCreated} />
-      )}
-      {creatingKind === "wordcloud" && (
-        <CreateWordCloudForm sessionId={sessionId} onCreated={handleCreated} />
-      )}
-      {creatingKind === "qa" && (
-        <CreateQAForm sessionId={sessionId} onCreated={handleCreated} />
-      )}
-      {creatingKind === "round" && (
-        <CreateRoundForm sessionId={sessionId} onCreated={handleCreated} />
-      )}
-      {creatingKind === "survey" && (
-        <CreateSurveyForm sessionId={sessionId} onCreated={handleCreated} />
-      )}
+      <CreatePollForm sessionId={sessionId} onCreated={onCreated} />
+      <CreateWordCloudForm sessionId={sessionId} onCreated={onCreated} />
+      <CreateQAForm sessionId={sessionId} onCreated={onCreated} />
+      <CreateRoundForm sessionId={sessionId} onCreated={onCreated} />
+      <CreateSurveyForm sessionId={sessionId} onCreated={onCreated} />
       */}
     </div>
+  );
+}
+
+const CIRCLE_STEPS: { icon: IconName; text: string }[] = [
+  { icon: "users", text: "Everyone gets the same question on their own phone" },
+  { icon: "layers", text: "Answers stay hidden, then you reveal them together" },
+  { icon: "sparkle", text: "Players earn Sparks for answering and for answers others love" },
+];
+
+// Testers didn't know what a Circle was, so say it plainly before the form.
+function CircleExplainer() {
+  return (
+    <section className="rounded-xl border border-stage-line bg-stage-2 p-5">
+      <h2 className="font-display text-xl font-bold">Set up a Circle</h2>
+      <p className="mt-1 text-sm text-stage-muted">
+        A Circle is a question game for your group. Here is how it plays:
+      </p>
+      <ul className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:gap-4">
+        {CIRCLE_STEPS.map((step) => (
+          <li key={step.icon} className="flex flex-1 items-start gap-2.5 text-sm text-stage-text">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-spotlight/15 text-spotlight">
+              <Icon name={step.icon} className="h-4 w-4" />
+            </span>
+            <span className="pt-1">{step.text}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
