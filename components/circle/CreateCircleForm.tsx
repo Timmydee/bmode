@@ -115,9 +115,6 @@ export default function CreateCircleForm({
   if (step === "setup") {
     return (
       <div className="flex flex-col gap-5">
-        <p className="text-sm font-medium text-stage-muted">
-          Create a Circle (everyone answers the same question on their own phone)
-        </p>
         <input
           value={name}
           onChange={(event) => setName(event.target.value)}
