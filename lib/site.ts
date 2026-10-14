@@ -1,9 +1,9 @@
 // Shared site details for metadata, the sitemap, robots.txt and the web
 // app manifest.
 export const SITE_NAME = "Bmode";
-export const SITE_TITLE = "Bmode: helping people connect through better questions";
+export const SITE_TITLE = "Bmode: a question game for friends, couples, and groups";
 export const SITE_DESCRIPTION =
-  "Bmode is a question game for groups, couples and friends. Everyone answers on their own phone, then the cards flip together. No app needed.";
+  "Discover fun, deep, and thought-provoking questions. Join a game on your phone, answer questions, and reveal everyone's answers together. No app download needed.";
 
 // The live site, as set on the GitHub repo.
 const PRODUCTION_URL = "https://bmode.vercel.app";
