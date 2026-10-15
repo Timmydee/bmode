@@ -3,7 +3,6 @@ import Link from "next/link";
 import BetaNote from "@/components/landing/BetaNote";
 import QuestionDeck from "@/components/landing/QuestionDeck";
 import Icon from "@/components/shared/Icon";
-import { cardStockStyle } from "@/lib/cards/card-stock";
 import { CIRCLE_QUESTIONS } from "@/lib/game/circle-questions";
 import { QUESTION_DECKS } from "@/lib/game/question-decks";
 
@@ -33,48 +32,39 @@ export default function Home() {
           </Link>
         </nav>
       </div>
-      <h1 className="mb-6 font-display text-[2.6rem] font-bold leading-[1.02] text-ink sm:max-w-[13ch] sm:text-6xl lg:max-w-[20ch]">
-        Helping people connect through better questions
+      <h1 className="mb-6 font-display text-[2.6rem] font-bold leading-[1.02] text-ink sm:max-w-[16ch] sm:text-6xl">
+        A question game for friends, couples, and groups.
       </h1>
-      <p className="mb-10 max-w-[40ch] text-lg text-ink-soft">
-        Everyone answers on their own phone, then the cards flip together. No
-        app needed.
+      <p className="mb-10 max-w-[46ch] text-lg text-ink-soft">
+        Discover fun, deep, and thought-provoking questions. Join a game on
+        your phone, answer questions, and reveal everyone&apos;s answers
+        together. No app download needed.
       </p>
       <div className="flex flex-wrap gap-3">
         <Link
           href="/host"
           className="rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink"
         >
-          Host a session
+          Start a game
         </Link>
         <Link
-          href="/join"
-          className="rounded-[10px] border-[1.5px] border-ink px-5 py-2.75 font-medium text-ink"
+          href="/cards"
+          className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-ink px-5 py-2.75 font-medium text-ink"
         >
-          Join with a code
+          <Icon name="layers" className="h-4 w-4" />
+          Browse question cards
         </Link>
       </div>
-      <Link
-        href="/cards"
-        className="group mt-8 flex max-w-md items-center gap-4 rounded-2xl border border-stage-line bg-stage-2 p-4 transition-colors hover:bg-stage-hover"
-      >
-        <span aria-hidden className="relative h-14 w-11 shrink-0">
-          <span className="card-back-pattern absolute inset-0 rotate-6 rounded-lg ring-1 ring-white/10" />
-          <span
-            style={cardStockStyle("relationships")}
-            className="absolute inset-0 flex -rotate-3 items-end p-1.5 rounded-lg ring-1 ring-white/20 transition-transform group-hover:-rotate-6"
-          >
-            <span className="h-2 w-2 rotate-45 rounded-[2px] bg-white/85" />
-          </span>
-        </span>
-        <span className="flex-1">
-          <span className="block font-display font-bold text-ink">Just want some good questions?</span>
-          <span className="block text-sm text-ink-soft">
-            Browse {CIRCLE_QUESTIONS.length} question cards and share them. No game needed.
-          </span>
-        </span>
-        <Icon name="arrow-right" className="h-5 w-5 text-ink-soft transition-transform group-hover:translate-x-1" />
-      </Link>
+      <p className="mt-4 text-sm text-ink-soft">
+        Got a code from a friend?{" "}
+        <Link href="/join" className="font-semibold text-ink underline underline-offset-4">
+          Join a game
+        </Link>
+      </p>
+      <p className="mt-10 flex items-center gap-2 font-display text-base font-semibold text-ink-soft">
+        <Icon name="heart" className="h-4 w-4 text-spotlight" />
+        Helping people connect through better questions.
+      </p>
       <BetaNote />
 
       <section aria-labelledby="decks-heading" className="mt-16 sm:mt-20">
