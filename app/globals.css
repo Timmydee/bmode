@@ -86,6 +86,25 @@ body {
   }
 }
 
+/* In an opened deck, the top card is swiped off the left edge from
+   wherever the finger let go of it (--from-x, --from-r)... */
+@keyframes deck-swipe {
+  from {
+    transform: translateX(var(--from-x, 0px)) rotate(var(--from-r, 0deg));
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-130vw) translateY(-6%) rotate(-24deg);
+  }
+}
+
+/* ...and a card pulled back slides in from where it was let go. */
+@keyframes deck-return {
+  from {
+    transform: translateX(var(--from-x, -100vw)) rotate(var(--from-r, 0deg));
+  }
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;
@@ -119,6 +138,14 @@ body {
 
 .animate-card-toss {
   animation: card-toss 450ms cubic-bezier(0.5, 0, 0.75, 0) both;
+}
+
+.animate-deck-swipe {
+  animation: deck-swipe 320ms cubic-bezier(0.4, 0, 0.7, 0.4) both;
+}
+
+.animate-deck-return {
+  animation: deck-return 320ms cubic-bezier(0.2, 0.8, 0.3, 1.05) backwards;
 }
 
 .animate-speaking {
@@ -181,12 +208,14 @@ body {
   .animate-deal-in,
   .animate-toast-in,
   .animate-speaking,
+  .animate-deck-return,
   .card-flip-inner {
     animation: none !important;
   }
 
   /* Without the toss, the old card would just sit on top of the new one. */
-  .animate-card-toss {
+  .animate-card-toss,
+  .animate-deck-swipe {
     display: none;
   }
 

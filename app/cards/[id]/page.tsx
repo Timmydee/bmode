@@ -6,6 +6,7 @@ import CardActions from "@/components/cards/CardActions";
 import CardFace, { CATEGORY_STYLES } from "@/components/cards/CardFace";
 import CardsHeader from "@/components/cards/CardsHeader";
 import Icon from "@/components/shared/Icon";
+import { deckPath } from "@/lib/cards/decks";
 import { cardById, cardCategory, cardPath, cardsInCategory } from "@/lib/cards/library";
 import { CIRCLE_QUESTIONS } from "@/lib/game/circle-questions";
 import { SITE_NAME } from "@/lib/site";
@@ -51,7 +52,7 @@ export default async function CardPage(props: PageProps<"/cards/[id]">) {
       <CardsHeader />
       <div className="mx-auto flex max-w-xl flex-col gap-6">
         <Link
-          href={`/cards?category=${category.id}`}
+          href={deckPath(category.id, card.id)}
           className={`flex w-max items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold ${style.chip}`}
         >
           <Icon name={style.icon} className="h-4 w-4" />
