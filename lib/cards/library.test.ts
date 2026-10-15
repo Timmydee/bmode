@@ -18,13 +18,25 @@ describe("question bank ids", () => {
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) expect(Number.isInteger(id) && id > 0).toBe(true);
   });
+
+  it("never repeats a question, since games track used questions by their text", () => {
+    const texts = CIRCLE_QUESTIONS.map((q) => q.text.toLowerCase());
+    expect(new Set(texts).size).toBe(texts.length);
+  });
+
+  it("gives every question a follow-up and no emoji", () => {
+    for (const q of CIRCLE_QUESTIONS) {
+      expect(q.followUp.length).toBeGreaterThan(0);
+      expect(/\p{Extended_Pictographic}/u.test(q.text + q.followUp)).toBe(false);
+    }
+  });
 });
 
 describe("card categories", () => {
   it("puts every card in exactly one category, and no category is empty", () => {
     const total = CARD_CATEGORIES.reduce((sum, c) => sum + cardsInCategory(c.id).length, 0);
     expect(total).toBe(CIRCLE_QUESTIONS.length);
-    for (const category of CARD_CATEGORIES) expect(cardsInCategory(category.id).length).toBeGreaterThan(4);
+    for (const category of CARD_CATEGORIES) expect(cardsInCategory(category.id).length).toBeGreaterThanOrEqual(30);
   });
 
   it("deals every card once in the All view, mixing categories", () => {
