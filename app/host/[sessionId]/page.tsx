@@ -31,6 +31,7 @@ import {
 } from "@/lib/game/validation";
 import JoinCode from "@/components/shared/JoinCode";
 import QRCodeButton from "@/components/shared/QRCodeButton";
+import QRCode from "@/components/shared/QRCode";
 import ParticipantCount from "@/components/shared/ParticipantCount";
 import PollResults from "@/components/poll/PollResults";
 import WordCloudDisplay from "@/components/wordcloud/WordCloudDisplay";
@@ -206,6 +207,7 @@ export default function HostSessionPage(
   const circleRunning = Boolean(circleGame.state && circleGame.state.circle.status !== "ended");
   const autoRevealError = useCircleAutoReveal(sessionId, circleGame.state, participantCount);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showSetup, setShowSetup] = useState(false);
   useEffect(() => {
     if (!sessionId) return;
     backend.activities.listBySession(sessionId).then(setActivities);
@@ -533,17 +535,16 @@ export default function HostSessionPage(
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-stage px-6 text-center text-white">
         <p className="font-display text-2xl font-semibold">
-          Session not found
+          Game not found
         </p>
         <p className="text-stage-muted">
-          It may have been deleted, or the link is wrong. Go back to your
-          sessions and try again.
+          It may have been deleted, or the link is wrong.
         </p>
         <Link
           href="/host"
           className="mt-2 rounded-[10px] border-[1.5px] border-white/30 px-5 py-2.75 font-medium text-white"
         >
-          Back to your sessions
+          Back to your games
         </Link>
       </div>
     );
@@ -553,20 +554,32 @@ export default function HostSessionPage(
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-stage px-6 text-center text-white">
         <p className="font-display text-2xl font-semibold">
-          You don’t have access to this session
+          This game was set up on another device
         </p>
         <p className="text-stage-muted">
-          Sign in as the host who created it to view this page.
+          Only the browser that started it can host it. Open it there, or start a new game here.
         </p>
         <Link
-          href="/host"
+          href="/host?new=1"
           className="mt-2 rounded-[10px] border-[1.5px] border-white/30 px-5 py-2.75 font-medium text-white"
         >
-          Sign in
+          Start a new game
         </Link>
       </div>
     );
   }
+
+  const startDisabled =
+    Boolean(activeActivity) ||
+    circleRunning ||
+    round.round?.status === "live" ||
+    survey.survey?.status === "live";
+  // The newest game that's set up but not started yet: the host's screen
+  // becomes its lobby (code, who's in, Start) instead of the setup form.
+  const lobbyCircle =
+    !activeActivity && !circleRunning
+      ? circles.filter((circle) => circle.status === "draft").at(-1) ?? null
+      : null;
 
   const joinUrl =
     typeof window !== "undefined"
@@ -603,6 +616,7 @@ export default function HostSessionPage(
           sessionId={sessionId}
           participantId={hostPlayer.participant.id}
           state={circleGame.state}
+          isHost
         />
       </div>
     );
@@ -615,11 +629,16 @@ export default function HostSessionPage(
           Bmode
         </span>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span className="text-sm whitespace-nowrap text-stage-muted">
-            Code
-            <JoinCode code={session.joinCode} className="ml-1.5 text-white" copyable />
-          </span>
-          <QRCodeButton url={joinUrl} code={session.joinCode} />
+          {/* The lobby shows the code and QR big; no need to repeat them. */}
+          {!lobbyCircle && (
+            <>
+              <span className="text-sm whitespace-nowrap text-stage-muted">
+                Code
+                <JoinCode code={session.joinCode} className="ml-1.5 text-white" copyable />
+              </span>
+              <QRCodeButton url={joinUrl} code={session.joinCode} />
+            </>
+          )}
           <Link
             href={`/host/${sessionId}/present`}
             target="_blank"
@@ -760,28 +779,48 @@ export default function HostSessionPage(
             Close Q&amp;A
           </HostActionButton>
         </div>
+      ) : lobbyCircle ? (
+        <CircleLobby
+          title={session.title}
+          circle={lobbyCircle}
+          joinCode={session.joinCode}
+          joinUrl={joinUrl}
+          participantCount={participantCount}
+          disabled={startDisabled}
+          onStart={handleActivateCircle}
+        />
       ) : (
         <div className="flex flex-col gap-2">
           <h1 className="font-display text-3xl font-bold sm:text-4xl">{session.title}</h1>
           <p className="text-stage-muted">
-            Set up a Circle below, then start it once everyone has joined.
+            Pick a vibe and the questions. Your group joins with the code once the game is ready.
           </p>
         </div>
       )}
 
-      {/* The other tools stay out of the way while a Circle is on. */}
-      <div className={`mt-10 border-t border-stage-line pt-8 ${circleRunning ? "hidden" : ""}`}>
+      {lobbyCircle && !circleRunning && !showSetup && (
+        <button
+          type="button"
+          onClick={() => setShowSetup(true)}
+          className="mt-8 self-start text-sm text-stage-muted underline underline-offset-4 hover:text-white"
+        >
+          Set up a different game
+        </button>
+      )}
+
+      {/* The other tools stay out of the way while a Circle is on, and the
+          setup form steps aside once a game is ready to start. */}
+      <div
+        className={`mt-10 border-t border-stage-line pt-8 ${
+          circleRunning || (lobbyCircle && !showSetup) ? "hidden" : ""
+        }`}
+      >
         {actionError && (
           <p className="mb-4 text-sm text-ember">{actionError}</p>
         )}
         <CircleQueue
-          circles={circles}
-          disabled={
-            Boolean(activeActivity) ||
-            circleRunning ||
-            round.round?.status === "live" ||
-            survey.survey?.status === "live"
-          }
+          circles={circles.filter((circle) => circle.id !== lobbyCircle?.id)}
+          disabled={startDisabled}
           onActivate={handleActivateCircle}
         />
         {/* Hidden for now: only Circle is offered. Uncomment these queues
@@ -815,13 +854,18 @@ export default function HostSessionPage(
           sessionId={sessionId}
           startVibe={startVibe}
           startCards={startCards}
-          onCreated={refreshActivities}
+          onCreated={() => {
+            refreshActivities();
+            setShowSetup(false);
+          }}
         />
       </div>
 
-      <div className="mt-10 flex items-center justify-between">
-        <ParticipantCount count={participantCount} variant="stage" />
-      </div>
+      {!lobbyCircle && (
+        <div className="mt-10 flex items-center justify-between">
+          <ParticipantCount count={participantCount} variant="stage" />
+        </div>
+      )}
     </div>
   );
 }
@@ -1028,6 +1072,128 @@ function RoundQueue({
         </li>
       ))}
     </ul>
+  );
+}
+
+// The host's screen once a game is set up: the code big enough to read
+// across a table, the QR to scan, a link to text to anyone not in the
+// room, who's in so far, and one Start button.
+function CircleLobby({
+  title,
+  circle,
+  joinCode,
+  joinUrl,
+  participantCount,
+  disabled,
+  onStart,
+}: {
+  title: string;
+  circle: Circle;
+  joinCode: string;
+  joinUrl: string;
+  participantCount: number;
+  disabled: boolean;
+  onStart: (circle: Circle) => void;
+}) {
+  const [showQuestions, setShowQuestions] = useState(false);
+  const [shared, setShared] = useState(false);
+  const planned = circle.settings.questions;
+  const vibe = CIRCLE_VIBES[circle.settings.vibe];
+
+  async function handleShare() {
+    const invite = `Join my Bmode game "${title}": ${joinUrl}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `Join ${title} on Bmode`, text: invite, url: joinUrl });
+        return;
+      }
+      await navigator.clipboard.writeText(invite);
+      setShared(true);
+      setTimeout(() => setShared(false), 1800);
+    } catch {
+      // Share sheet dismissed or clipboard blocked: the code is on screen.
+    }
+  }
+
+  return (
+    <section aria-labelledby="lobby-heading" className="flex w-full max-w-3xl flex-col gap-6">
+      <div>
+        <p className="text-sm font-semibold tracking-wide text-spotlight uppercase">Ready to play</p>
+        <h1 id="lobby-heading" className="mt-1 font-display text-3xl font-bold sm:text-4xl">
+          {title}
+        </h1>
+        <p className="mt-1 text-stage-muted">
+          {vibe?.name ?? "Circle"} · {circle.settings.questionCount} questions ·{" "}
+          {circle.settings.rewardStyle === "together" ? "Together" : "Competitive"}
+          {circle.settings.answerMode === "out_loud" ? " · Out loud" : ""}
+        </p>
+      </div>
+
+      <div className="flex flex-col items-center gap-5 rounded-2xl border border-stage-line bg-stage-2 p-6 text-center sm:flex-row sm:items-center sm:gap-8 sm:p-8 sm:text-left">
+        {joinUrl && (
+          <QRCode url={joinUrl} size={148} className="shrink-0" />
+        )}
+        <div className="flex flex-col items-center gap-3 sm:items-start">
+          <p className="text-sm text-stage-muted">
+            Everyone scans the QR, or goes to {joinUrl ? new URL(joinUrl).host : "Bmode"} and enters
+          </p>
+          <JoinCode code={joinCode} className="text-5xl text-white sm:text-6xl" />
+          <button
+            type="button"
+            onClick={handleShare}
+            className="inline-flex items-center gap-2 rounded-[10px] border-[1.5px] border-white/30 px-4 py-2 text-sm font-medium text-white"
+          >
+            <Icon name="share" className="h-4 w-4" />
+            {shared ? "Invite link copied" : "Send the invite link"}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="flex items-center gap-2 text-stage-text" aria-live="polite">
+          <span
+            className={`h-2 w-2 rounded-full ${participantCount > 0 ? "bg-live" : "animate-pulse bg-stage-muted"}`}
+          />
+          {participantCount === 0
+            ? "Waiting for your group to join…"
+            : `${participantCount} ${participantCount === 1 ? "person has" : "people have"} joined`}
+        </p>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onStart(circle)}
+          className="rounded-[10px] bg-spotlight px-6 py-3 text-lg font-semibold text-spotlight-ink disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Start the game
+        </button>
+      </div>
+      <p className="-mt-3 text-sm text-stage-muted">
+        Playing too? Start the game and you can play from this phone.
+      </p>
+
+      {planned.length > 0 && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowQuestions((open) => !open)}
+            aria-expanded={showQuestions}
+            className="text-sm text-stage-muted underline underline-offset-4 hover:text-white"
+          >
+            {showQuestions ? "Hide the questions" : "Peek at the questions"}
+          </button>
+          {showQuestions && (
+            <ol className="mt-3 flex list-decimal flex-col gap-1 pl-6 text-sm text-stage-text">
+              {planned.map((question) => (
+                <li key={question.text}>
+                  {question.text}
+                  <span className="ml-2 text-xs text-stage-muted">{CIRCLE_DEPTH_LABELS[question.depth]}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
