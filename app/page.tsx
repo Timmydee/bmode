@@ -42,7 +42,7 @@ export default function Home() {
       </p>
       <div className="flex flex-wrap gap-3">
         <Link
-          href="/host"
+          href="/host?new=1"
           className="rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink"
         >
           Start a game

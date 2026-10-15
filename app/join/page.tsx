@@ -20,10 +20,10 @@ export default function JoinPage() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-20">
       <h1 className="mb-2 font-display text-3xl font-semibold text-ink">
-        Join a session
+        Join a game
       </h1>
       <p className="mb-8 text-ink-soft">
-        Enter the six-digit code your host is showing on screen.
+        Enter the six-digit code your host is showing, or scan their QR code.
       </p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input

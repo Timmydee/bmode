@@ -12,7 +12,7 @@ export default function CardsHeader() {
         <Link href="/cards" className="rounded-lg px-3 py-2 text-ink-soft hover:bg-stage-2 hover:text-ink">
           Cards
         </Link>
-        <Link href="/host" className="rounded-lg bg-stage-button px-3 py-2 text-ink hover:bg-stage-button-hover">
+        <Link href="/host?new=1" className="rounded-lg bg-stage-button px-3 py-2 text-ink hover:bg-stage-button-hover">
           Host a game
         </Link>
       </nav>
