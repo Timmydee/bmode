@@ -16,7 +16,6 @@ import {
   FlipCard,
   QuestionCard,
   ReactionPill,
-  SparksPill,
   channelName,
 } from "./Cards";
 
@@ -69,10 +68,7 @@ export default function CircleHostView({
   if (circle.status !== "live" && circle.recap) {
     return (
       <div className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center gap-6 py-6">
-        <CircleRecap recap={circle.recap} awardVotes={state.awardVotes} variant="stage" />
-        {circle.status === "recap" && (
-          <p className="text-sm text-stage-muted">Players can vote for awards on their phones.</p>
-        )}
+        <CircleRecap recap={circle.recap} variant="stage" />
         {controls}
         <EmailSignup source="host_recap" {...HOST_SIGNUP_COPY} dismissible className="mt-4 w-full" />
       </div>
@@ -109,7 +105,6 @@ export default function CircleHostView({
           <span className="text-sm text-stage-muted sm:hidden">
             {state.questionNumber}/{circle.settings.questionCount}
           </span>
-          <SparksPill value={state.totals.pot} label="Sparks the group has earned" />
         </span>
       </header>
 

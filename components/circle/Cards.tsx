@@ -314,17 +314,3 @@ export function channelName(name: string): string {
       .replace(/^-|-$/g, "") || "circle"
   );
 }
-
-// The Sparks counter, styled like a server boost pill.
-export function SparksPill({ value, label = "Sparks" }: { value: number; label?: string }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-2.5 py-1 font-display text-sm font-bold tabular-nums text-gold"
-      title={label}
-    >
-      <Icon name="sparkle" className="h-4 w-4" />
-      {value}
-      <span className="sr-only">{label}</span>
-    </span>
-  );
-}

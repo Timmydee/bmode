@@ -1,19 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import type { CircleAnswer } from "@/lib/backend";
 import type { CircleState } from "@/lib/hooks/useCircle";
 import {
   submitCircleAnswer,
   toggleCircleHeart,
   toggleDeeperVote,
-  voteCircleAward,
 } from "@/lib/circle/actions";
-import { sparkFeedback, type SparkMessage } from "@/lib/circle/feedback";
-import { circleAwardsEnabled, displayName, speakingOrder } from "@/lib/game/circle";
+import { displayName, speakingOrder } from "@/lib/game/circle";
 import { CIRCLE_ANSWER_MAX_LENGTH, validateCircleAnswer } from "@/lib/game/validation";
-import CircleRecap, { CIRCLE_AWARDS } from "./CircleRecap";
+import CircleRecap from "./CircleRecap";
 import Icon from "@/components/shared/Icon";
 import EmailSignup, { HOST_SIGNUP_COPY } from "@/components/shared/EmailSignup";
 import {
@@ -24,7 +22,6 @@ import {
   FlipCard,
   QuestionCard,
   ReactionPill,
-  SparksPill,
   channelName,
 } from "./Cards";
 
@@ -53,18 +50,11 @@ export default function CirclePlayerView({
   onRefresh,
 }: CirclePlayerViewProps) {
   const { circle, question } = state;
-  const toasts = useSparkToasts(state, participantId);
 
   if (circle.status !== "live" && circle.recap) {
     return (
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-6 py-12">
-        <CircleRecap
-          recap={circle.recap}
-          awardVotes={state.awardVotes}
-          variant="paper"
-          highlightParticipantId={participantId}
-        />
-        <AwardVoting sessionId={sessionId} participantId={participantId} state={state} />
+        <CircleRecap recap={circle.recap} variant="paper" highlightParticipantId={participantId} />
         {circle.status === "ended" && (
           <p className="text-center text-sm text-ink-faint">Thanks for playing. The host can deal another game.</p>
         )}
@@ -81,10 +71,6 @@ export default function CirclePlayerView({
     return <div className="flex flex-1 items-center justify-center text-ink-soft">Dealing the next card…</div>;
   }
 
-  const competitive = circle.settings.rewardStyle === "competitive";
-  const mySparks = state.totals.byParticipant.get(participantId) ?? 0;
-  const myHearts = state.totals.heartsByParticipant.get(participantId) ?? 0;
-
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-5 px-4 pt-3 pb-10">
       <header className="flex items-center justify-between gap-2 border-b border-rail pb-3">
@@ -98,21 +84,8 @@ export default function CirclePlayerView({
           <span className="text-sm text-ink-faint">
             Question {state.questionNumber} of {circle.settings.questionCount}
           </span>
-          {competitive ? (
-            <span
-              className="inline-flex items-center gap-1 rounded-full bg-fuchsia/15 px-2.5 py-1 font-display text-sm font-bold tabular-nums text-fuchsia"
-              title="Hearts you’ve received"
-            >
-              <Icon name="heart" filled className="h-4 w-4" />
-              {myHearts}
-              <span className="sr-only">hearts, {mySparks} Sparks</span>
-            </span>
-          ) : (
-            <SparksPill value={state.totals.pot} label="Sparks the group has earned" />
-          )}
         </span>
       </header>
-      <SparkToasts toasts={toasts} />
       <h1 className="sr-only">{question.text}</h1>
       <QuestionCard text={question.text} depth={question.depth} />
       {question.phase === "answering" ? (
@@ -129,61 +102,6 @@ export default function CirclePlayerView({
       ) : (
         <Revealed sessionId={sessionId} participantId={participantId} state={state} />
       )}
-    </div>
-  );
-}
-
-interface Toast extends SparkMessage {
-  id: number;
-}
-
-// Turns each new reward (see lib/circle/feedback.ts) into a short-lived
-// toast. The previous state is kept in state, not a ref, and compared
-// during render, React's pattern for reacting to a changed prop.
-function useSparkToasts(state: CircleState, participantId: string): Toast[] {
-  const [seen, setSeen] = useState(state);
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  if (seen !== state) {
-    setSeen(state);
-    const messages = sparkFeedback(seen, state, participantId);
-    // Rewards belong to the question they were earned on; drop any still
-    // queued once the game moves on.
-    if (seen.question?.id !== state.question?.id) setToasts([]);
-    if (messages.length > 0) {
-      setToasts((current) => {
-        let id = current.at(-1)?.id ?? 0;
-        return [...current, ...messages.map((message) => ({ id: ++id, ...message }))];
-      });
-    }
-  }
-
-  useEffect(() => {
-    if (toasts.length === 0) return;
-    const timer = setTimeout(() => setToasts((current) => current.slice(1)), 2200);
-    return () => clearTimeout(timer);
-  }, [toasts]);
-
-  return toasts;
-}
-
-function SparkToasts({ toasts }: { toasts: Toast[] }) {
-  return (
-    <div
-      aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex flex-col items-center gap-2 px-4"
-    >
-      {toasts.slice(0, 2).map((toast) => (
-        <p
-          key={toast.id}
-          className="flex animate-toast-in items-center gap-2 rounded-lg border-l-4 border-gold bg-floating px-4 py-2.5 text-sm font-semibold text-ink shadow-[0_8px_24px_rgb(0_0_0/50%)]"
-        >
-          <span className="inline-flex items-center gap-1 font-display font-bold text-gold tabular-nums">
-            <Icon name="sparkle" className="h-4 w-4" />+{toast.sparks}
-            <span className="sr-only">Sparks</span>
-          </span>
-          {toast.text}
-        </p>
-      ))}
     </div>
   );
 }
@@ -576,57 +494,6 @@ function SpeakerCard({
         </button>
       )}
     </li>
-  );
-}
-
-function AwardVoting({ sessionId, participantId, state }: CirclePlayerViewProps) {
-  const { circle, awardVotes } = state;
-  const [error, setError] = useState<string | null>(null);
-  const players = circle.recap?.players ?? [];
-  const others = players.filter((p) => p.participantId !== participantId);
-  if (!circleAwardsEnabled(players.length) || others.length === 0) return null;
-
-  async function vote(award: (typeof CIRCLE_AWARDS)[number]["award"], nomineeParticipantId: string) {
-    setError(null);
-    try {
-      await voteCircleAward({ sessionId, circleId: circle.id, participantId, award, nomineeParticipantId });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save your vote.");
-    }
-  }
-
-  return (
-    <section className="flex flex-col gap-4">
-      <h2 className="font-display text-lg font-bold text-ink">Hand out awards</h2>
-      {CIRCLE_AWARDS.map(({ award, label }) => {
-        const myVote = awardVotes.find((v) => v.participantId === participantId && v.award === award);
-        return (
-          <div key={award} className="flex flex-col gap-2">
-            <p className="text-xs font-bold tracking-wide text-ink-faint uppercase">{label}</p>
-            <div className="flex flex-wrap gap-2">
-              {others.map((player) => {
-                const selected = myVote?.nomineeParticipantId === player.participantId;
-                return (
-                  <button
-                    key={player.participantId}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => vote(award, player.participantId)}
-                    className={`flex items-center gap-2 rounded-full py-1 pr-3.5 pl-1 text-sm font-semibold transition-colors ${
-                      selected ? "bg-blurple text-white" : "bg-paper-2 text-ink hover:bg-stage-hover"
-                    }`}
-                  >
-                    <Avatar name={displayName(player.nickname)} size="sm" />
-                    {displayName(player.nickname)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-      {error && <p className="text-sm text-ember">{error}</p>}
-    </section>
   );
 }
 

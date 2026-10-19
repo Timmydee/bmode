@@ -128,7 +128,7 @@ export default function HostPage(props: PageProps<"/host">) {
     <div className="mx-auto w-full max-w-2xl px-6 py-16">
       <h1 className="mb-2 font-display text-3xl font-semibold text-ink">Host a game</h1>
       <p className="mb-8 text-ink-soft">
-        You pick the questions, everyone plays on their own phone. No sign-up needed.
+        Pick a vibe, we deal the cards, everyone plays on their own phone. No sign-up needed.
       </p>
 
       <form onSubmit={handleCreate} className="mb-3 flex flex-col gap-3 sm:flex-row">

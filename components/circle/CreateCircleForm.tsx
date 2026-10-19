@@ -2,34 +2,25 @@
 
 import { useState, type FormEvent } from "react";
 import { backend } from "@/lib/backend";
-import type {
-  CircleAnswerMode,
-  CircleDepth,
-  CirclePlannedQuestion,
-  CircleRewardStyle,
-  CircleVibe,
-} from "@/lib/backend";
-import { CIRCLE_DEPTH_LABELS, CIRCLE_VIBES, suggestQuestionSet } from "@/lib/game/circle";
+import type { CircleAnswerMode, CirclePlannedQuestion, CircleVibe } from "@/lib/backend";
+import { CIRCLE_VIBES, suggestQuestionSet } from "@/lib/game/circle";
 import { CIRCLE_MIN_QUESTIONS, validateCircleDraft } from "@/lib/game/validation";
 import { collectionCards } from "@/lib/cards/library";
-import CircleQuestionPicker from "./CircleQuestionPicker";
-
-const REWARD_STYLES: { value: CircleRewardStyle; label: string; description: string }[] = [
-  { value: "together", label: "Together", description: "One shared score, no rankings" },
-  { value: "competitive", label: "Competitive", description: "Everyone’s Sparks are ranked at the end" },
-];
+import { PremiumPickerList } from "@/components/cards/PremiumDecks";
 
 const ANSWER_MODES: { value: CircleAnswerMode; label: string; description: string }[] = [
-  { value: "typed", label: "Typed", description: "Answers appear on every phone" },
-  { value: "out_loud", label: "Out loud", description: "Phones just say who’s ready; you talk" },
+  { value: "typed", label: "Typed", description: "Everyone types on their phone, then the answers flip over together" },
+  { value: "out_loud", label: "Out loud", description: "Phones just say who’s ready, then you take turns talking" },
 ];
 
 const DEFAULT_COUNT = 8;
 
-// Two steps: set the game up, then see and shape the exact questions
-// before anything is created. The picker starts from a suggested set for
-// the chosen vibe so a host can create a game in two taps, or curate it.
-// Coming from the card library, it starts from the cards they picked.
+const STEPS = ["name", "vibe", "answers", "ready"] as const;
+type Step = (typeof STEPS)[number];
+
+// Four short steps: name, vibe, how people answer, create. The questions
+// are dealt at random from the vibe, so there's nothing to pick. Coming
+// from the card library, the game plays the cards they picked instead.
 export default function CreateCircleForm({
   sessionId,
   initialVibe = "know",
@@ -41,52 +32,25 @@ export default function CreateCircleForm({
   initialCards?: string | null; // card ids from /cards, e.g. "3-12-40"
   onCreated: () => void;
 }) {
-  const [step, setStep] = useState<"setup" | "questions">("setup");
+  const [step, setStep] = useState<Step>("name");
+  const [typedName, setTypedName] = useState("");
   const [vibe, setVibe] = useState<CircleVibe>(initialVibe);
-  // Until the host types a name, the game is named after its vibe, so
-  // phones show "# just-us-two" rather than a generic "# circle".
-  const [customName, setCustomName] = useState<string | null>(null);
-  const name = customName ?? CIRCLE_VIBES[vibe].name;
-  const [rewardStyle, setRewardStyle] = useState<CircleRewardStyle>("together");
   const [answerMode, setAnswerMode] = useState<CircleAnswerMode>("typed");
-  const [questions, setQuestions] = useState<CirclePlannedQuestion[]>(() =>
-    plannedFromCards(initialCards, initialVibe),
-  );
-  // Which vibe the current list was suggested for, and whether the host
-  // has touched it since — a hand-edited list is never replaced silently.
-  // Picked cards count as hand-edited.
-  const [suggestedFor, setSuggestedFor] = useState<CircleVibe | null>(null);
-  const [edited, setEdited] = useState(() => questions.length > 0);
+  const [pickedCards] = useState(() => plannedFromCards(initialCards, initialVibe));
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Left blank, the game is named after its vibe ("# go-deeper").
+  const name = typedName.trim() || CIRCLE_VIBES[vibe].name;
+  const stepIndex = STEPS.indexOf(step);
 
-  function goToQuestions() {
-    if (name.trim().length === 0) {
-      setError("Give the game a name.");
-      return;
-    }
+  function go(to: Step) {
     setError(null);
-    if (questions.length === 0 || (suggestedFor !== vibe && !edited)) {
-      setQuestions(suggestQuestionSet({ vibe, count: DEFAULT_COUNT, random: Math.random }));
-      setSuggestedFor(vibe);
-      setEdited(false);
-    }
-    setStep("questions");
+    setStep(to);
   }
 
-  function updateQuestions(next: CirclePlannedQuestion[]) {
-    setQuestions(next);
-    setEdited(true);
-  }
-
-  function resuggest(count: number) {
-    setQuestions(suggestQuestionSet({ vibe, count, random: Math.random }));
-    setSuggestedFor(vibe);
-    setEdited(false);
-  }
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
+  async function create() {
+    const questions =
+      pickedCards.length > 0 ? pickedCards : suggestQuestionSet({ vibe, count: DEFAULT_COUNT, random: Math.random });
     const validation = validateCircleDraft({ name, questions });
     if (!validation.valid) {
       setError(validation.error ?? "Check the game before creating it.");
@@ -97,11 +61,11 @@ export default function CreateCircleForm({
     try {
       await backend.circles.create({
         sessionId,
-        name: name.trim(),
+        name,
         settings: {
           vibe,
           questionCount: questions.length,
-          rewardStyle,
+          rewardStyle: "together",
           answerMode,
           questions: questions.map((q) => ({ ...q, text: q.text.trim() })),
           customQuestions: [],
@@ -115,74 +79,104 @@ export default function CreateCircleForm({
     }
   }
 
-  if (step === "setup") {
-    return (
-      <div className="flex flex-col gap-5">
-        <label htmlFor="circle-name" className="-mb-3 text-sm text-stage-muted">
-          Game name
-        </label>
-        <input
-          id="circle-name"
-          value={name}
-          onChange={(event) => setCustomName(event.target.value)}
-          placeholder="Game name"
-          className="rounded-[10px] border-[1.5px] border-stage-line bg-stage-2 px-4 py-3 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
-        />
-        <OptionGroup
-          label="Vibe"
-          options={(Object.keys(CIRCLE_VIBES) as CircleVibe[]).map((value) => ({
-            value,
-            label: CIRCLE_VIBES[value].name,
-            description: CIRCLE_VIBES[value].description,
-          }))}
-          value={vibe}
-          onChange={setVibe}
-        />
-        <OptionGroup label="Rewards" options={REWARD_STYLES} value={rewardStyle} onChange={setRewardStyle} />
-        <OptionGroup label="Answers" options={ANSWER_MODES} value={answerMode} onChange={setAnswerMode} />
-        {error && <p className="text-sm text-ember">{error}</p>}
-        <button
-          type="button"
-          onClick={goToQuestions}
-          className="self-start rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink"
-        >
-          Next: pick the questions
-        </button>
-      </div>
-    );
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (step === "ready") void create();
+    else go(STEPS[stepIndex + 1]);
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm font-medium text-stage-muted">
-          {name.trim() === CIRCLE_VIBES[vibe].name ? "" : `${name.trim()} · `}
-          {CIRCLE_VIBES[vibe].name} · pick the questions
-        </p>
-        <DepthSummary questions={questions} />
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-semibold text-stage-muted tabular-nums">
+          {stepIndex + 1}/{STEPS.length}
+        </span>
+        <span className="flex flex-1 gap-1.5" aria-hidden>
+          {STEPS.map((s, index) => (
+            <span
+              key={s}
+              className={`h-1.5 flex-1 rounded-full ${index <= stepIndex ? "bg-spotlight" : "bg-stage-line"}`}
+            />
+          ))}
+        </span>
       </div>
 
-      <CircleQuestionPicker vibe={vibe} questions={questions} onChange={updateQuestions} onSuggest={resuggest} />
+      {step === "name" && (
+        <div className="flex flex-col gap-2">
+          <label htmlFor="circle-name" className="font-display text-xl font-bold text-white">
+            Name your game
+          </label>
+          <input
+            id="circle-name"
+            value={typedName}
+            onChange={(event) => setTypedName(event.target.value)}
+            placeholder="e.g. Friday crew"
+            maxLength={60}
+            autoFocus
+            className="rounded-[10px] border-[1.5px] border-stage-line bg-stage-2 px-4 py-3 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
+          />
+          <p className="text-xs text-stage-muted">Optional. Leave it blank to name it after the vibe.</p>
+        </div>
+      )}
+
+      {step === "vibe" && (
+        <div className="flex flex-col gap-4">
+          <ChoiceList
+            label="Pick a vibe"
+            options={(Object.keys(CIRCLE_VIBES) as CircleVibe[]).map((value) => ({
+              value,
+              label: CIRCLE_VIBES[value].name,
+              description: CIRCLE_VIBES[value].description,
+            }))}
+            value={vibe}
+            onChange={setVibe}
+          />
+          <PremiumPickerList />
+        </div>
+      )}
+
+      {step === "answers" && (
+        <ChoiceList label="How will people answer?" options={ANSWER_MODES} value={answerMode} onChange={setAnswerMode} />
+      )}
+
+      {step === "ready" && (
+        <div className="flex flex-col gap-3">
+          <h3 className="font-display text-xl font-bold text-white">Ready to create</h3>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-xl border border-stage-line bg-stage-2 p-4 text-sm">
+            <dt className="text-stage-muted">Name</dt>
+            <dd className="text-white">{name}</dd>
+            <dt className="text-stage-muted">Vibe</dt>
+            <dd className="text-white">{CIRCLE_VIBES[vibe].name}</dd>
+            <dt className="text-stage-muted">Answers</dt>
+            <dd className="text-white">{ANSWER_MODES.find((m) => m.value === answerMode)?.label}</dd>
+            <dt className="text-stage-muted">Cards</dt>
+            <dd className="text-white">
+              {pickedCards.length > 0
+                ? `The ${pickedCards.length} cards you picked`
+                : `${DEFAULT_COUNT} questions dealt at random`}
+            </dd>
+          </dl>
+        </div>
+      )}
 
       {error && <p className="text-sm text-ember">{error}</p>}
 
       <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            setError(null);
-            setStep("setup");
-          }}
-          className="rounded-[10px] border-[1.5px] border-white/30 px-5 py-2.75 font-medium text-white"
-        >
-          Back
-        </button>
+        {stepIndex > 0 && (
+          <button
+            type="button"
+            onClick={() => go(STEPS[stepIndex - 1])}
+            className="rounded-[10px] border-[1.5px] border-white/30 px-5 py-2.75 font-medium text-white"
+          >
+            Back
+          </button>
+        )}
         <button
           type="submit"
           disabled={creating}
           className="rounded-[10px] bg-spotlight px-5 py-2.75 font-medium text-spotlight-ink disabled:opacity-60"
         >
-          {creating ? "Creating…" : `Create Circle with ${questions.length} questions`}
+          {step === "ready" ? (creating ? "Creating…" : "Create game") : "Next"}
         </button>
       </div>
     </form>
@@ -208,51 +202,37 @@ function plannedFromCards(ids: string | null, vibe: CircleVibe): CirclePlannedQu
   return [...picked, ...extra];
 }
 
-function DepthSummary({ questions }: { questions: CirclePlannedQuestion[] }) {
-  const count = (depth: CircleDepth) => questions.filter((q) => q.depth === depth).length;
-  return (
-    <p className="text-xs text-stage-muted">
-      {([1, 2, 3] as CircleDepth[])
-        .filter((depth) => count(depth) > 0)
-        .map((depth) => `${count(depth)} ${CIRCLE_DEPTH_LABELS[depth]}`)
-        .join(" · ")}
-    </p>
-  );
-}
-
-function OptionGroup<T extends string | number>({
+// One choice per row, with its description, big enough to tap on a phone.
+function ChoiceList<T extends string>({
   label,
   options,
   value,
   onChange,
 }: {
   label: string;
-  options: { value: T; label: string; description?: string }[];
+  options: { value: T; label: string; description: string }[];
   value: T;
   onChange: (value: T) => void;
 }) {
-  const selected = options.find((option) => option.value === value);
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-2 text-sm text-stage-muted">{label}</legend>
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={option.value === value}
-            onClick={() => onChange(option.value)}
-            className={`rounded-[10px] px-4 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-spotlight/60 ${
-              option.value === value
-                ? "bg-spotlight text-spotlight-ink"
-                : "border-[1.5px] border-stage-line text-stage-text"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-      {selected?.description && <p className="text-xs text-stage-muted">{selected.description}</p>}
+      <legend className="mb-2 font-display text-xl font-bold text-white">{label}</legend>
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          aria-pressed={option.value === value}
+          onClick={() => onChange(option.value)}
+          className={`flex flex-col rounded-xl border-[1.5px] px-4 py-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-spotlight/60 ${
+            option.value === value
+              ? "border-spotlight bg-spotlight/10"
+              : "border-stage-line bg-stage-2 hover:border-white/30"
+          }`}
+        >
+          <span className="font-medium text-white">{option.label}</span>
+          <span className="text-sm text-stage-muted">{option.description}</span>
+        </button>
+      ))}
     </fieldset>
   );
 }
