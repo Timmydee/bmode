@@ -88,7 +88,7 @@ export function PremiumLibrarySection() {
   );
 }
 
-/** A compact list of the locked decks in the host's question picker. */
+/** A compact list of the locked decks on the vibe step of game setup. */
 export function PremiumPickerList() {
   const { open, sheet } = usePremiumSheet("picker");
   return (

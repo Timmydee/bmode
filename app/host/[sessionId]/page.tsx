@@ -794,7 +794,7 @@ export default function HostSessionPage(
         <div className="flex flex-col gap-2">
           <h1 className="font-display text-3xl font-bold sm:text-4xl">{session.title}</h1>
           <p className="text-stage-muted">
-            Pick a vibe and the questions. Your group joins with the code once the game is ready.
+            Four quick steps and the cards are dealt for you. Your group joins with the code once the game is ready.
           </p>
         </div>
       )}
@@ -1124,8 +1124,7 @@ function CircleLobby({
           {title}
         </h1>
         <p className="mt-1 text-stage-muted">
-          {vibe?.name ?? "Circle"} · {circle.settings.questionCount} questions ·{" "}
-          {circle.settings.rewardStyle === "together" ? "Together" : "Competitive"}
+          {vibe?.name ?? "Circle"} · {circle.settings.questionCount} questions
           {circle.settings.answerMode === "out_loud" ? " · Out loud" : ""}
         </p>
       </div>
@@ -1237,8 +1236,7 @@ function CircleQueueItem({
         <span className="text-sm text-stage-text">
           {circle.name}
           <span className="ml-2 text-stage-muted">
-            {circle.settings.questionCount} questions ·{" "}
-            {circle.settings.rewardStyle === "together" ? "Together" : "Competitive"}
+            {circle.settings.questionCount} questions
           </span>
         </span>
         <div className="flex shrink-0 items-center gap-3">
@@ -1374,7 +1372,7 @@ function CreateActivitySection({
 const CIRCLE_STEPS: { icon: IconName; text: string }[] = [
   { icon: "users", text: "Everyone gets the same question on their own phone" },
   { icon: "layers", text: "Answers stay hidden, then you reveal them together" },
-  { icon: "sparkle", text: "Players earn Sparks for answering and for answers others love" },
+  { icon: "heart", text: "Heart the answers you love, then talk about them" },
 ];
 
 // Testers didn't know what a Circle was, so say it plainly before the form.

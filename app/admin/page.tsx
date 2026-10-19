@@ -291,8 +291,8 @@ async function EmailSignupsPanel() {
   );
 }
 
-// The fake-door test: locked premium decks on /cards and in the host's
-// question picker. Loaded on its own so the page works before 0011.
+// The fake-door test: locked premium decks on /cards and on the host's
+// vibe step of game setup. Loaded on its own so the page works before 0011.
 async function PremiumDecksPanel() {
   let summary;
   try {
@@ -309,7 +309,7 @@ async function PremiumDecksPanel() {
     );
   }
   const rows: { label: string; stats: PremiumPlaceStats }[] = [
-    { label: "Hosts, in the question picker", stats: summary.places.picker },
+    { label: "Hosts, on the vibe step of setup", stats: summary.places.picker },
     { label: "Visitors, on the cards page", stats: summary.places.cards },
     { label: "Everyone", stats: summary.total },
   ];
