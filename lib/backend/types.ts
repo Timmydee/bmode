@@ -315,7 +315,7 @@ export interface FeedbackDraft {
 export type EmailSignupSource = "host_recap" | "cards" | "premium_deck";
 
 // Locked premium decks, a fake-door test (migration 0011). Where one was
-// seen: the /cards library or the host's question picker.
+// seen: the /cards library or the vibe step of game setup ("picker").
 export type PremiumPlace = "cards" | "picker";
 export type PremiumAction = "view" | "tap" | "email";
 
