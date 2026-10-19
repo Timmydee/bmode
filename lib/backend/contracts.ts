@@ -31,6 +31,7 @@ import type {
   FeedbackDraft,
   InsightsSummary,
   UsageEventKind,
+  PremiumInterestRow,
 } from "./types";
 import type { SessionEvent } from "./events";
 
@@ -262,6 +263,8 @@ export interface InsightsRepository {
   sendFeedback(draft: FeedbackDraft): Promise<void>;
   /** Saves an opt-in email. Signing up twice with one address succeeds. */
   signUpForEmails(draft: EmailSignupDraft): Promise<void>;
+  /** Fire-and-forget: a locked premium deck was seen, tapped or asked for. */
+  recordPremiumInterest(row: PremiumInterestRow): Promise<void>;
 }
 
 /**
@@ -273,6 +276,7 @@ export interface InsightsAdminReader {
   summary(): Promise<InsightsSummary>;
   listFeedback(limit: number): Promise<Feedback[]>;
   listEmailSignups(): Promise<EmailSignup[]>;
+  listPremiumInterest(): Promise<PremiumInterestRow[]>;
 }
 
 export interface RealtimeClient {
