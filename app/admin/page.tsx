@@ -4,6 +4,7 @@ import { adminPasswordConfigured, isAdmin } from "@/lib/admin-auth";
 import { adminInsights } from "@/lib/backend/admin";
 import type { EmailSignup, Feedback, InsightsDay, InsightsSummary } from "@/lib/backend";
 import Icon from "@/components/shared/Icon";
+import { summarizePremiumInterest, tapRate, type PremiumPlaceStats } from "@/lib/cards/premium";
 import { signIn, signOut } from "./actions";
 
 export const metadata: Metadata = {
@@ -100,6 +101,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       </p>
 
       <DailyChart days={summary.daily} />
+
+      <PremiumDecksPanel />
 
       <EmailSignupsPanel />
 
@@ -227,6 +230,7 @@ function DailyChart({ days }: { days: InsightsDay[] }) {
 const SIGNUP_SOURCES: Record<EmailSignup["source"], string> = {
   host_recap: "Host, after a game",
   cards: "Question cards page",
+  premium_deck: "Locked premium deck",
 };
 
 // Loaded on its own so the rest of the page still works before migration
@@ -253,7 +257,7 @@ async function EmailSignupsPanel() {
         <h2 className="font-display text-lg font-bold">Email signups</h2>
         <p className="text-sm text-stage-muted">
           {plural(signups.length, "person", "people")} · {bySource("host_recap")} hosts ·{" "}
-          {bySource("cards")} from the cards page
+          {bySource("cards")} from the cards page · {bySource("premium_deck")} from premium decks
         </p>
       </div>
       {signups.length === 0 ? (
@@ -283,6 +287,75 @@ async function EmailSignupsPanel() {
           </ul>
         </>
       )}
+    </section>
+  );
+}
+
+// The fake-door test: locked premium decks on /cards and in the host's
+// question picker. Loaded on its own so the page works before 0011.
+async function PremiumDecksPanel() {
+  let summary;
+  try {
+    summary = summarizePremiumInterest(await adminInsights.listPremiumInterest());
+  } catch (error) {
+    return (
+      <section className={`${panel} p-5`}>
+        <h2 className="font-display text-lg font-bold">Premium decks</h2>
+        <p className="mt-3 text-sm text-stage-muted">
+          Couldn&apos;t load the test ({error instanceof Error ? error.message : String(error)}). Apply
+          migration <Code>0011_premium_interest.sql</Code> in Supabase.
+        </p>
+      </section>
+    );
+  }
+  const rows: { label: string; stats: PremiumPlaceStats }[] = [
+    { label: "Hosts, in the question picker", stats: summary.places.picker },
+    { label: "Visitors, on the cards page", stats: summary.places.cards },
+    { label: "Everyone", stats: summary.total },
+  ];
+  return (
+    <section className={`${panel} p-5`}>
+      <h2 className="font-display text-lg font-bold">Premium decks</h2>
+      <p className="text-xs text-stage-muted">
+        Locked decks nobody can buy yet. Tapping one asks for an email. Counts are distinct browsers. If around 5%
+        of hosts who see them tap, build payments.
+      </p>
+      <table className="mt-4 w-full text-left text-sm tabular-nums">
+        <thead className="text-xs text-stage-muted">
+          <tr>
+            <th className="py-1 font-medium">Who</th>
+            <th className="py-1 text-right font-medium">Saw</th>
+            <th className="py-1 text-right font-medium">Tapped</th>
+            <th className="py-1 text-right font-medium">Tap rate</th>
+            <th className="py-1 text-right font-medium">Emails</th>
+          </tr>
+        </thead>
+        <tbody className="text-stage-text">
+          {rows.map(({ label, stats }) => {
+            const rate = tapRate(stats);
+            return (
+              <tr key={label} className="border-t border-stage-line">
+                <td className="py-1.5">{label}</td>
+                <td className="py-1.5 text-right">{stats.viewers}</td>
+                <td className="py-1.5 text-right">{stats.tappers}</td>
+                <td className="py-1.5 text-right font-semibold text-white">{rate === null ? "None yet" : `${rate}%`}</td>
+                <td className="py-1.5 text-right">{stats.emails}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <h3 className="mt-5 text-xs font-medium text-stage-muted">By deck</h3>
+      <ul className="mt-1 divide-y divide-stage-line text-sm">
+        {summary.decks.map((deck) => (
+          <li key={deck.id} className="flex items-center justify-between gap-4 py-2">
+            <span className="text-white">{deck.name}</span>
+            <span className="text-xs text-stage-muted tabular-nums">
+              {plural(deck.tappers, "tap", "taps")} · {plural(deck.emails, "email", "emails")}
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

@@ -35,5 +35,15 @@ export function createInsightsRepository(): InsightsRepository {
       // 23505: this address is already on the list, which is what they wanted.
       if (error && error.code !== "23505") throw new Error(error.message);
     },
+
+    async recordPremiumInterest({ deviceId, deckId, action, place }) {
+      const { error } = await supabase.from("premium_interest").insert({
+        device_id: deviceId,
+        deck_id: deckId,
+        action,
+        place,
+      });
+      if (error) throw new Error(error.message);
+    },
   };
 }

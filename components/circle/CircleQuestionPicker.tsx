@@ -5,6 +5,7 @@ import type { CircleDepth, CirclePlannedQuestion, CircleVibe } from "@/lib/backe
 import { CIRCLE_QUESTIONS } from "@/lib/game/circle-questions";
 import { CIRCLE_DEPTH_LABELS, swapQuestion } from "@/lib/game/circle";
 import Icon from "@/components/shared/Icon";
+import { PremiumPickerList } from "@/components/cards/PremiumDecks";
 import {
   CIRCLE_CUSTOM_QUESTION_MAX_LENGTH,
   CIRCLE_MAX_QUESTIONS,
@@ -144,6 +145,8 @@ export default function CircleQuestionPicker({ vibe, questions, onChange, onSugg
         {browsing ? "Hide the question library" : `Browse all ${CIRCLE_QUESTIONS.length} questions`}
       </button>
       {browsing && <LibraryBrowser vibe={vibe} questions={questions} onAdd={add} onChange={onChange} />}
+
+      <PremiumPickerList />
     </div>
   );
 }

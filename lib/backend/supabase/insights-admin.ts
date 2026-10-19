@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { InsightsAdminReader } from "../contracts";
-import type { EmailSignup, Feedback, InsightsSummary } from "../types";
+import type { EmailSignup, Feedback, InsightsSummary, PremiumInterestRow } from "../types";
 
 // Reads usage and feedback with the service role key, which bypasses RLS.
 // Server-only: the key must never reach the browser.
@@ -56,6 +56,13 @@ interface EmailSignupRow {
   consent_text: string;
   device_id: string | null;
   created_at: string;
+}
+
+interface PremiumInterestDbRow {
+  device_id: string;
+  deck_id: string | null;
+  action: PremiumInterestRow["action"];
+  place: PremiumInterestRow["place"];
 }
 
 export function createInsightsAdminReader(): InsightsAdminReader {
@@ -118,6 +125,23 @@ export function createInsightsAdminReader(): InsightsAdminReader {
           consentText: row.consent_text,
           deviceId: row.device_id,
           createdAt: row.created_at,
+        }),
+      );
+    },
+
+    // Every row, counted in the page: the test is small and short-lived.
+    async listPremiumInterest() {
+      const { data, error } = await adminClient()
+        .from("premium_interest")
+        .select("device_id, deck_id, action, place")
+        .returns<PremiumInterestDbRow[]>();
+      if (error) throw new Error(error.message);
+      return data.map(
+        (row): PremiumInterestRow => ({
+          deviceId: row.device_id,
+          deckId: row.deck_id,
+          action: row.action,
+          place: row.place,
         }),
       );
     },
