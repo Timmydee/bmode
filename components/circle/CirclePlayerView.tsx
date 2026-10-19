@@ -38,12 +38,20 @@ interface CirclePlayerViewProps {
   // The host playing on their own phone: they already run games, so the
   // recap skips the "host your own" invite.
   isHost?: boolean;
+  // Reloads the game; used when this phone turns out to be behind.
+  onRefresh?: () => void;
 }
 
 // One player's phone during a Circle: the black question card on top,
 // your answer written on a white card and played face down, then every
 // card turned over together for reactions.
-export default function CirclePlayerView({ sessionId, participantId, state, isHost = false }: CirclePlayerViewProps) {
+export default function CirclePlayerView({
+  sessionId,
+  participantId,
+  state,
+  isHost = false,
+  onRefresh,
+}: CirclePlayerViewProps) {
   const { circle, question } = state;
   const toasts = useSparkToasts(state, participantId);
 
@@ -114,6 +122,9 @@ export default function CirclePlayerView({ sessionId, participantId, state, isHo
           sessionId={sessionId}
           participantId={participantId}
           state={state}
+          // Answered after the reveal on a phone that missed it: catch up,
+          // and the revealed screen explains they're in from the next one.
+          onTooLate={() => onRefresh?.()}
         />
       ) : (
         <Revealed sessionId={sessionId} participantId={participantId} state={state} />
@@ -177,7 +188,12 @@ function SparkToasts({ toasts }: { toasts: Toast[] }) {
   );
 }
 
-function Answering({ sessionId, participantId, state }: CirclePlayerViewProps) {
+function Answering({
+  sessionId,
+  participantId,
+  state,
+  onTooLate,
+}: CirclePlayerViewProps & { onTooLate: () => void }) {
   const { circle, question, answers } = state;
   const mine = answers.find((a) => a.participantId === participantId) ?? null;
   const [editing, setEditing] = useState(false);
@@ -191,13 +207,17 @@ function Answering({ sessionId, participantId, state }: CirclePlayerViewProps) {
     setSubmitting(true);
     setError(null);
     try {
-      await submitCircleAnswer({
+      const result = await submitCircleAnswer({
         sessionId,
         circleId: circle.id,
         circleQuestionId: question.id,
         participantId,
         ...answer,
       });
+      if (result === "too-late") {
+        onTooLate();
+        return;
+      }
       setEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send your answer.");

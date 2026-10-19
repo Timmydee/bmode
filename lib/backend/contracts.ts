@@ -232,12 +232,14 @@ export interface CircleRepository {
   saveBond(hostId: string, groupKey: string, sparks: number): Promise<void>;
 
   // Participant-side writes. The caller publishes circle_answers_changed.
+  // "too-late" means the question was already revealed (or moved on), so
+  // the answer wasn't saved.
   submitAnswer(input: {
     circleQuestionId: string;
     participantId: string;
     text: string | null;
     skipped: boolean;
-  }): Promise<void>;
+  }): Promise<"saved" | "too-late">;
   setHeart(input: { answerId: string; participantId: string; on: boolean }): Promise<void>;
   setDeeperVote(input: { circleQuestionId: string; participantId: string; on: boolean }): Promise<void>;
   voteAward(input: {

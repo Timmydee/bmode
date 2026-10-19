@@ -164,6 +164,7 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
         sessionId={sessionByCode.id}
         participantId={participant.id}
         state={circleGame.state}
+        onRefresh={circleGame.refresh}
       />
     );
   }

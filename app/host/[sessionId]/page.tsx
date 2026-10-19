@@ -617,6 +617,7 @@ export default function HostSessionPage(
           participantId={hostPlayer.participant.id}
           state={circleGame.state}
           isHost
+          onRefresh={circleGame.refresh}
         />
       </div>
     );

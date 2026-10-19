@@ -194,7 +194,11 @@ export function createCircleRepository(): CircleRepository {
         },
         { onConflict: "circle_question_id,participant_id" },
       );
+      // 42501: the RLS check failed because the question is no longer
+      // 'answering' (the host revealed it while this phone was behind).
+      if (error?.code === "42501") return "too-late";
       if (error) throw new Error(error.message);
+      return "saved";
     },
 
     async setHeart({ answerId, participantId, on }) {
