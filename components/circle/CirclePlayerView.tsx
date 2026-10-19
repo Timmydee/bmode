@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import type { CircleAnswer } from "@/lib/backend";
 import type { CircleState } from "@/lib/hooks/useCircle";
@@ -14,6 +15,7 @@ import { circleAwardsEnabled, displayName, speakingOrder } from "@/lib/game/circ
 import { CIRCLE_ANSWER_MAX_LENGTH, validateCircleAnswer } from "@/lib/game/validation";
 import CircleRecap, { CIRCLE_AWARDS } from "./CircleRecap";
 import Icon from "@/components/shared/Icon";
+import EmailSignup, { HOST_SIGNUP_COPY } from "@/components/shared/EmailSignup";
 import {
   AnswerCard,
   Avatar,
@@ -33,12 +35,15 @@ interface CirclePlayerViewProps {
   sessionId: string;
   participantId: string;
   state: CircleState;
+  // The host playing on their own phone: they already run games, so the
+  // recap skips the "host your own" invite.
+  isHost?: boolean;
 }
 
 // One player's phone during a Circle: the black question card on top,
 // your answer written on a white card and played face down, then every
 // card turned over together for reactions.
-export default function CirclePlayerView({ sessionId, participantId, state }: CirclePlayerViewProps) {
+export default function CirclePlayerView({ sessionId, participantId, state, isHost = false }: CirclePlayerViewProps) {
   const { circle, question } = state;
   const toasts = useSparkToasts(state, participantId);
 
@@ -54,6 +59,11 @@ export default function CirclePlayerView({ sessionId, participantId, state }: Ci
         <AwardVoting sessionId={sessionId} participantId={participantId} state={state} />
         {circle.status === "ended" && (
           <p className="text-center text-sm text-ink-faint">Thanks for playing. The host can deal another game.</p>
+        )}
+        {isHost ? (
+          <EmailSignup source="host_recap" {...HOST_SIGNUP_COPY} dismissible />
+        ) : (
+          <HostYourOwn />
         )}
       </div>
     );
@@ -596,6 +606,31 @@ function AwardVoting({ sessionId, participantId, state }: CirclePlayerViewProps)
         );
       })}
       {error && <p className="text-sm text-ember">{error}</p>}
+    </section>
+  );
+}
+
+// The end of a game is when a player is most likely to want their own:
+// one tap to host, or the cards to send to someone.
+function HostYourOwn() {
+  return (
+    <section className="flex flex-col items-center gap-3 rounded-lg border border-rail bg-stage-2 p-6 text-center">
+      <h2 className="font-display text-lg font-bold text-ink">Want to play with your people?</h2>
+      <p className="text-sm text-ink-soft">Host your own game in a few taps. Free, no app, no sign-up.</p>
+      <div className="flex flex-wrap justify-center gap-2">
+        <Link
+          href="/host?new=1"
+          className="rounded-[10px] bg-spotlight px-5 py-2.5 font-medium text-spotlight-ink"
+        >
+          Host a game
+        </Link>
+        <Link
+          href="/cards"
+          className="rounded-[10px] bg-stage-button px-5 py-2.5 font-medium text-ink hover:bg-stage-button-hover"
+        >
+          Browse question cards
+        </Link>
+      </div>
     </section>
   );
 }

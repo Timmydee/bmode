@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import CardLibrary from "@/components/cards/CardLibrary";
 import CardsHeader from "@/components/cards/CardsHeader";
+import EmailSignup from "@/components/shared/EmailSignup";
 import { parseDeck } from "@/lib/cards/decks";
 import { CIRCLE_QUESTIONS } from "@/lib/game/circle-questions";
 
@@ -23,6 +24,12 @@ export default async function CardsPage(props: PageProps<"/cards">) {
         Pick a deck and swipe through it. Send a card to a friend, or collect a few and turn them into a game.
       </p>
       <CardLibrary initialOpen={initialOpen} />
+      <EmailSignup
+        source="cards"
+        heading="Get 5 new questions every week"
+        blurb="Fresh cards for date night, catch-ups and group chats, straight to your inbox."
+        className="mx-auto mb-36 max-w-2xl"
+      />
     </div>
   );
 }

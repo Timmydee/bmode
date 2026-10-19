@@ -84,7 +84,7 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
   if (sessionByCode === undefined) {
     return (
       <div className="flex flex-1 items-center justify-center text-ink-soft">
-        Looking for that session…
+        Looking for that game…
       </div>
     );
   }
@@ -93,7 +93,7 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
         <p className="font-display text-2xl font-semibold text-ink">
-          No session with that code
+          No game with that code
         </p>
         <p className="text-ink-soft">
           Double-check the code with your host and try again.
@@ -145,7 +145,7 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
               disabled={joining}
               className="mt-2 rounded-[4px] bg-blurple px-5 py-2.75 font-semibold text-white transition-colors hover:bg-spotlight-hover disabled:opacity-60"
             >
-              {joining ? "Joining…" : "Join session"}
+              {joining ? "Joining…" : "Join the game"}
             </button>
           </form>
         </div>
@@ -244,7 +244,11 @@ export default function JoinCodePage(props: PageProps<"/join/[code]">) {
       </h1>
       <p className="text-ink-soft">
         You’re in{participant.nickname ? `, ${participant.nickname}` : ""}.
-        Waiting for the host to start something.
+        The game starts when the host taps Start.
+      </p>
+      <p className="max-w-[32ch] text-sm text-ink-faint">
+        Everyone gets the same question on their phone. Write your answer,
+        then all the cards flip over together.
       </p>
       <ParticipantCount count={participantCount} variant="paper" />
     </div>

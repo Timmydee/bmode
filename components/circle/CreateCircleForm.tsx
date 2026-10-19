@@ -42,8 +42,11 @@ export default function CreateCircleForm({
   onCreated: () => void;
 }) {
   const [step, setStep] = useState<"setup" | "questions">("setup");
-  const [name, setName] = useState("Circle");
   const [vibe, setVibe] = useState<CircleVibe>(initialVibe);
+  // Until the host types a name, the game is named after its vibe, so
+  // phones show "# just-us-two" rather than a generic "# circle".
+  const [customName, setCustomName] = useState<string | null>(null);
+  const name = customName ?? CIRCLE_VIBES[vibe].name;
   const [rewardStyle, setRewardStyle] = useState<CircleRewardStyle>("together");
   const [answerMode, setAnswerMode] = useState<CircleAnswerMode>("typed");
   const [questions, setQuestions] = useState<CirclePlannedQuestion[]>(() =>
@@ -115,9 +118,13 @@ export default function CreateCircleForm({
   if (step === "setup") {
     return (
       <div className="flex flex-col gap-5">
+        <label htmlFor="circle-name" className="-mb-3 text-sm text-stage-muted">
+          Game name
+        </label>
         <input
+          id="circle-name"
           value={name}
-          onChange={(event) => setName(event.target.value)}
+          onChange={(event) => setCustomName(event.target.value)}
           placeholder="Game name"
           className="rounded-[10px] border-[1.5px] border-stage-line bg-stage-2 px-4 py-3 text-white outline-none placeholder:text-stage-muted focus-visible:border-spotlight focus-visible:ring-2 focus-visible:ring-spotlight/40"
         />
@@ -149,7 +156,8 @@ export default function CreateCircleForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm font-medium text-stage-muted">
-          {name.trim()} · {CIRCLE_VIBES[vibe].name} · pick the questions
+          {name.trim() === CIRCLE_VIBES[vibe].name ? "" : `${name.trim()} · `}
+          {CIRCLE_VIBES[vibe].name} · pick the questions
         </p>
         <DepthSummary questions={questions} />
       </div>

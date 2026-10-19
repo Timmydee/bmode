@@ -24,5 +24,16 @@ export function createInsightsRepository(): InsightsRepository {
       });
       if (error) throw new Error(error.message);
     },
+
+    async signUpForEmails(draft) {
+      const { error } = await supabase.from("email_signups").insert({
+        email: draft.email,
+        source: draft.source,
+        consent_text: draft.consentText,
+        device_id: draft.deviceId,
+      });
+      // 23505: this address is already on the list, which is what they wanted.
+      if (error && error.code !== "23505") throw new Error(error.message);
+    },
   };
 }

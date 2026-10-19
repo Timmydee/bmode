@@ -311,6 +311,20 @@ export interface FeedbackDraft {
   sessionId: string | null;
 }
 
+export type EmailSignupSource = "host_recap" | "cards";
+
+export interface EmailSignupDraft {
+  email: string;
+  source: EmailSignupSource;
+  consentText: string; // the exact promise shown next to the button
+  deviceId: string | null;
+}
+
+export interface EmailSignup extends EmailSignupDraft {
+  id: string;
+  createdAt: string;
+}
+
 export interface Feedback extends FeedbackDraft {
   id: string;
   createdAt: string;

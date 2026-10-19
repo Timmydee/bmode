@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       // Admin is private; live sessions are per-room and short-lived.
-      disallow: ["/admin", "/host/", "/join/"],
+      disallow: ["/admin", "/host", "/join/"],
     },
     sitemap: new URL("/sitemap.xml", siteUrl()).toString(),
   };

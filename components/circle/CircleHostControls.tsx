@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { CircleState } from "@/lib/hooks/useCircle";
 import {
   advanceCircle,
@@ -34,6 +34,14 @@ export default function CircleHostControls({
   const { circle, question, answers, hearts, deeperVotes } = state;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "End game" sits right next to "Next question", so it takes a second tap
+  // to confirm; the first tap arms it for a few seconds.
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  useEffect(() => {
+    if (!confirmEnd) return;
+    const timer = setTimeout(() => setConfirmEnd(false), 4000);
+    return () => clearTimeout(timer);
+  }, [confirmEnd]);
 
   async function run(action: () => Promise<void>) {
     if (busy) return;
@@ -75,11 +83,18 @@ export default function CircleHostControls({
     const end = (
       <ControlButton
         bar={bar}
-        variant="secondary"
-        onClick={() => run(() => endCircle({ sessionId, hostId, circle }))}
+        variant={confirmEnd ? "danger" : "secondary"}
+        onClick={() => {
+          if (!confirmEnd) {
+            setConfirmEnd(true);
+            return;
+          }
+          setConfirmEnd(false);
+          run(() => endCircle({ sessionId, hostId, circle }));
+        }}
         disabled={busy}
       >
-        End game
+        {confirmEnd ? "Tap again to end" : "End game"}
       </ControlButton>
     );
     if (question.phase === "answering") {
@@ -149,7 +164,7 @@ function ControlButton({
 }: {
   onClick: () => void;
   disabled?: boolean;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "danger";
   bar: boolean;
   children: ReactNode;
 }) {
@@ -163,7 +178,9 @@ function ControlButton({
       } ${
         variant === "primary"
           ? "bg-blurple text-white hover:bg-spotlight-hover focus-visible:ring-2 focus-visible:ring-blurple/60"
-          : "bg-stage-button text-white hover:bg-stage-button-hover focus-visible:ring-2 focus-visible:ring-white/60"
+          : variant === "danger"
+            ? "bg-ember text-white focus-visible:ring-2 focus-visible:ring-white/60"
+            : "bg-stage-button text-white hover:bg-stage-button-hover focus-visible:ring-2 focus-visible:ring-white/60"
       }`}
     >
       {children}
