@@ -131,11 +131,23 @@ export function useCircle(sessionId: string | null): UseCircleResult {
   useEffect(() => {
     if (!sessionId) return;
     refresh();
-    return backend.realtime.subscribe(sessionId, (event) => {
+    // A phone that was locked or offline misses the events sent meanwhile,
+    // so catch up whenever the page comes back.
+    function refreshIfVisible() {
+      if (document.visibilityState === "visible") refresh();
+    }
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    window.addEventListener("online", refresh);
+    const unsubscribe = backend.realtime.subscribe(sessionId, (event) => {
       if (event.type === "circle_updated" || event.type === "circle_answers_changed") {
         refresh();
       }
     });
+    return () => {
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      window.removeEventListener("online", refresh);
+      unsubscribe();
+    };
   }, [sessionId, refresh]);
 
   if (!sessionId || loaded?.sessionId !== sessionId) {

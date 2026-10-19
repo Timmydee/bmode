@@ -241,15 +241,18 @@ export async function submitCircleAnswer(input: {
   participantId: string;
   text: string | null;
   skipped: boolean;
-}): Promise<void> {
-  await backend.circles.submitAnswer({
+}): Promise<"saved" | "too-late"> {
+  const result = await backend.circles.submitAnswer({
     circleQuestionId: input.circleQuestionId,
     participantId: input.participantId,
     text: input.text?.trim() || null,
     skipped: input.skipped,
   });
-  navigator.vibrate?.(30);
-  await publishAnswersChanged(input.sessionId, input.circleId, input.circleQuestionId);
+  if (result === "saved") {
+    navigator.vibrate?.(30);
+    await publishAnswersChanged(input.sessionId, input.circleId, input.circleQuestionId);
+  }
+  return result;
 }
 
 export async function toggleCircleHeart(input: {
