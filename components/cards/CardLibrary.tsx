@@ -62,7 +62,7 @@ export default function CardLibrary({ initialOpen }: { initialOpen: Open | null 
 
   return (
     <>
-      <ul className="grid gap-x-6 gap-y-10 pb-36 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid gap-x-6 gap-y-10 pb-14 sm:grid-cols-2 lg:grid-cols-3">
         {DECKS.map((deck, position) => (
           <li key={deck.id} className="min-w-0">
             <DeckStack deck={deck} position={position} onOpen={() => openDeck(deck.id)} />

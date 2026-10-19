@@ -25,6 +25,8 @@ import type {
   CircleRecap,
   CircleSettings,
   CircleStatus,
+  EmailSignup,
+  EmailSignupDraft,
   Feedback,
   FeedbackDraft,
   InsightsSummary,
@@ -258,6 +260,8 @@ export interface InsightsRepository {
     sessionId?: string | null;
   }): Promise<void>;
   sendFeedback(draft: FeedbackDraft): Promise<void>;
+  /** Saves an opt-in email. Signing up twice with one address succeeds. */
+  signUpForEmails(draft: EmailSignupDraft): Promise<void>;
 }
 
 /**
@@ -268,6 +272,7 @@ export interface InsightsRepository {
 export interface InsightsAdminReader {
   summary(): Promise<InsightsSummary>;
   listFeedback(limit: number): Promise<Feedback[]>;
+  listEmailSignups(): Promise<EmailSignup[]>;
 }
 
 export interface RealtimeClient {

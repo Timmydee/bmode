@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { InsightsAdminReader } from "../contracts";
-import type { Feedback, InsightsSummary } from "../types";
+import type { EmailSignup, Feedback, InsightsSummary } from "../types";
 
 // Reads usage and feedback with the service role key, which bypasses RLS.
 // Server-only: the key must never reach the browser.
@@ -49,6 +49,15 @@ interface FeedbackRow {
   created_at: string;
 }
 
+interface EmailSignupRow {
+  id: string;
+  email: string;
+  source: EmailSignup["source"];
+  consent_text: string;
+  device_id: string | null;
+  created_at: string;
+}
+
 export function createInsightsAdminReader(): InsightsAdminReader {
   return {
     async summary(): Promise<InsightsSummary> {
@@ -89,6 +98,25 @@ export function createInsightsAdminReader(): InsightsAdminReader {
           email: row.email,
           page: row.page,
           sessionId: row.session_id,
+          createdAt: row.created_at,
+        }),
+      );
+    },
+
+    async listEmailSignups() {
+      const { data, error } = await adminClient()
+        .from("email_signups")
+        .select()
+        .order("created_at", { ascending: false })
+        .returns<EmailSignupRow[]>();
+      if (error) throw new Error(error.message);
+      return data.map(
+        (row): EmailSignup => ({
+          id: row.id,
+          email: row.email,
+          source: row.source,
+          consentText: row.consent_text,
+          deviceId: row.device_id,
           createdAt: row.created_at,
         }),
       );

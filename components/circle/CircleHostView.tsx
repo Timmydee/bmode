@@ -5,6 +5,7 @@ import type { CircleState } from "@/lib/hooks/useCircle";
 import { displayName, speakingOrder } from "@/lib/game/circle";
 import CircleHostControls from "./CircleHostControls";
 import CircleRecap from "./CircleRecap";
+import EmailSignup, { HOST_SIGNUP_COPY } from "@/components/shared/EmailSignup";
 import Icon from "@/components/shared/Icon";
 import {
   AnswerCard,
@@ -73,6 +74,7 @@ export default function CircleHostView({
           <p className="text-sm text-stage-muted">Players can vote for awards on their phones.</p>
         )}
         {controls}
+        <EmailSignup source="host_recap" {...HOST_SIGNUP_COPY} dismissible className="mt-4 w-full" />
       </div>
     );
   }

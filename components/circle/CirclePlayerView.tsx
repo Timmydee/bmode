@@ -15,6 +15,7 @@ import { circleAwardsEnabled, displayName, speakingOrder } from "@/lib/game/circ
 import { CIRCLE_ANSWER_MAX_LENGTH, validateCircleAnswer } from "@/lib/game/validation";
 import CircleRecap, { CIRCLE_AWARDS } from "./CircleRecap";
 import Icon from "@/components/shared/Icon";
+import EmailSignup, { HOST_SIGNUP_COPY } from "@/components/shared/EmailSignup";
 import {
   AnswerCard,
   Avatar,
@@ -59,7 +60,11 @@ export default function CirclePlayerView({ sessionId, participantId, state, isHo
         {circle.status === "ended" && (
           <p className="text-center text-sm text-ink-faint">Thanks for playing. The host can deal another game.</p>
         )}
-        {!isHost && <HostYourOwn />}
+        {isHost ? (
+          <EmailSignup source="host_recap" {...HOST_SIGNUP_COPY} dismissible />
+        ) : (
+          <HostYourOwn />
+        )}
       </div>
     );
   }

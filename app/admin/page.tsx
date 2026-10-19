@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { adminPasswordConfigured, isAdmin } from "@/lib/admin-auth";
 import { adminInsights } from "@/lib/backend/admin";
-import type { Feedback, InsightsDay, InsightsSummary } from "@/lib/backend";
+import type { EmailSignup, Feedback, InsightsDay, InsightsSummary } from "@/lib/backend";
 import Icon from "@/components/shared/Icon";
 import { signIn, signOut } from "./actions";
 
@@ -100,6 +100,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
       </p>
 
       <DailyChart days={summary.daily} />
+
+      <EmailSignupsPanel />
 
       <section className={`${panel} p-5`}>
         <h2 className="font-display text-lg font-bold">Feedback</h2>
@@ -218,6 +220,69 @@ function DailyChart({ days }: { days: InsightsDay[] }) {
           </tbody>
         </table>
       </details>
+    </section>
+  );
+}
+
+const SIGNUP_SOURCES: Record<EmailSignup["source"], string> = {
+  host_recap: "Host, after a game",
+  cards: "Question cards page",
+};
+
+// Loaded on its own so the rest of the page still works before migration
+// 0010 is applied.
+async function EmailSignupsPanel() {
+  let signups: EmailSignup[];
+  try {
+    signups = await adminInsights.listEmailSignups();
+  } catch (error) {
+    return (
+      <section className={`${panel} p-5`}>
+        <h2 className="font-display text-lg font-bold">Email signups</h2>
+        <p className="mt-3 text-sm text-stage-muted">
+          Couldn&apos;t load signups ({error instanceof Error ? error.message : String(error)}). Apply
+          migration <Code>0010_email_signups.sql</Code> in Supabase.
+        </p>
+      </section>
+    );
+  }
+  const bySource = (source: EmailSignup["source"]) => signups.filter((s) => s.source === source).length;
+  return (
+    <section className={`${panel} p-5`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-display text-lg font-bold">Email signups</h2>
+        <p className="text-sm text-stage-muted">
+          {plural(signups.length, "person", "people")} · {bySource("host_recap")} hosts ·{" "}
+          {bySource("cards")} from the cards page
+        </p>
+      </div>
+      {signups.length === 0 ? (
+        <p className="mt-3 text-sm text-stage-muted">No signups yet.</p>
+      ) : (
+        <>
+          <label className="mt-4 flex flex-col gap-1.5 text-xs text-stage-muted">
+            Every address, ready to paste into your email tool
+            <textarea
+              readOnly
+              rows={3}
+              value={signups.map((s) => s.email).join(", ")}
+              className="rounded-[10px] border-[1.5px] border-stage-line bg-rail px-3 py-2 font-mono text-xs text-white"
+            />
+          </label>
+          <ul className="mt-3 divide-y divide-stage-line text-sm">
+            {signups.map((s) => (
+              <li key={s.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
+                <a href={`mailto:${s.email}`} className="text-blurple-soft hover:underline">
+                  {s.email}
+                </a>
+                <span className="text-xs text-stage-muted">
+                  {SIGNUP_SOURCES[s.source]} · {formatDate(s.createdAt)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   );
 }
